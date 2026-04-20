@@ -10,66 +10,13 @@ if (!defined('ABSPATH')) {
 add_shortcode('shed_tv_dashboard', 'shed_tv_dashboard_render');
 
 function shed_tv_dashboard_render() {
-    $tv_filter = isset($_GET['tv_filter']) ? sanitize_key($_GET['tv_filter']) : 'all';
+    $tv_filter    = shed_get_tv_filter();
+$projects     = shed_get_tv_dashboard_projects($tv_filter);
+$stage_labels = shed_get_stage_labels();
 
-    $all_projects = get_posts([
-        'post_type'      => 'project',
-        'posts_per_page' => -1,
-        'orderby'        => 'title',
-        'order'          => 'ASC',
-    ]);
-
-    $projects = [];
-
-    foreach ($all_projects as $project) {
-        $volunteer_status = get_post_meta($project->ID, 'volunteer_status', true);
-        $project_stage    = get_post_meta($project->ID, 'project_stage', true);
-
-        if ($volunteer_status === '') {
-            $volunteer_status = 'seeking_volunteers';
-        }
-
-        if ($project_stage === '') {
-            $project_stage = 'quote';
-        }
-
-        $include = false;
-
-        switch ($tv_filter) {
-            case 'awaiting_you':
-                $include = ($project_stage === 'awaiting_you');
-                break;
-
-            case 'seeking_volunteers':
-                $include = ($project_stage !== 'awaiting_you' && $volunteer_status === 'seeking_volunteers');
-                break;
-
-            case 'volunteer_goal_achieved':
-                $include = ($project_stage !== 'awaiting_you' && $volunteer_status === 'volunteer_goal_achieved');
-                break;
-
-            case 'all':
-            default:
-                $include = true;
-                break;
-        }
-
-        if ($include) {
-            $projects[] = $project;
-        }
-    }
-
-    if (!$projects) {
-        return '<p>No projects found.</p>';
-    }
-
-    $stage_labels = [
-        'quote'        => 'Quote',
-        'awaiting_you' => 'Awaiting you!',
-        'in_progress'  => 'In progress',
-        'invoicing'    => 'Invoicing',
-        'complete'     => 'Complete',
-    ];
+if (!$projects) {
+    return '<p>No projects found.</p>';
+}
 
     ob_start();
     ?>
@@ -401,32 +348,19 @@ function shed_tv_dashboard_render() {
                         $required         = intval(get_post_meta($project->ID, 'hours_required', true));
                         $committed        = intval(get_post_meta($project->ID, 'hours_committed', true));
                         $target           = get_post_meta($project->ID, 'completion_target_date', true);
-                        $volunteer_status = get_post_meta($project->ID, 'volunteer_status', true);
-                        $project_stage    = get_post_meta($project->ID, 'project_stage', true);
+                       $volunteer_status = get_post_meta($project->ID, 'volunteer_status', true);
+$project_stage    = get_post_meta($project->ID, 'project_stage', true);
 
-                        $percent = $required > 0 ? min(100, round(($committed / $required) * 100)) : 0;
+$percent = $required > 0 ? min(100, round(($committed / $required) * 100)) : 0;
 
-                        if ($volunteer_status === '') {
-                            $volunteer_status = 'seeking_volunteers';
-                        }
+if ($project_stage === '') {
+    $project_stage = 'quote';
+}
 
-                        if ($project_stage === '') {
-                            $project_stage = 'quote';
-                        }
-
-                        if ($project_stage === 'awaiting_you') {
-                            $status = 'How about this?';
-                            $bar_color = '#d4a017';
-                            $status_cls = 'shed-status-idea';
-                        } elseif ($volunteer_status === 'volunteer_goal_achieved') {
-                            $status = 'Goal achieved';
-                            $bar_color = '#b30000';
-                            $status_cls = 'shed-status-full';
-                        } else {
-                            $status = 'Seeking volunteers';
-                            $bar_color = '#0a7f00';
-                            $status_cls = 'shed-status-open';
-                        }
+$status_data = shed_get_project_dashboard_status($project->ID);
+$status      = $status_data['label'];
+$bar_color   = $status_data['bar_color'];
+$status_cls  = $status_data['class'];
 
                         $description = wp_trim_words(wp_strip_all_tags($project->post_content), 24);
 
