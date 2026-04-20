@@ -135,3 +135,60 @@ if (!function_exists('shed_get_volunteer_signup_summary')) {
         ];
     }
 }
+
+if (!function_exists('shed_get_tv_dashboard_project_data')) {
+    function shed_get_tv_dashboard_project_data($project) {
+        $project_id = is_object($project) ? $project->ID : intval($project);
+        $project_post = is_object($project) ? $project : get_post($project_id);
+
+        if (!$project_post) {
+            return null;
+        }
+
+        $project_ref   = get_post_meta($project_id, 'project_ref', true);
+        $required      = intval(get_post_meta($project_id, 'hours_required', true));
+        $committed     = intval(get_post_meta($project_id, 'hours_committed', true));
+        $target        = get_post_meta($project_id, 'completion_target_date', true);
+        $project_stage = get_post_meta($project_id, 'project_stage', true);
+
+        if ($project_stage === '') {
+            $project_stage = 'quote';
+        }
+
+        $percent = $required > 0 ? min(100, round(($committed / $required) * 100)) : 0;
+
+        $status_data = shed_get_project_dashboard_status($project_id);
+
+        $description = wp_trim_words(wp_strip_all_tags($project_post->post_content), 24);
+
+        $volunteer_url = add_query_arg(
+            'project_id',
+            $project_id,
+            site_url('/home/members-area/projects-volunteer-signup/')
+        );
+
+        $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($volunteer_url);
+
+        $image_html = '';
+        if (has_post_thumbnail($project_id)) {
+            $image_html = get_the_post_thumbnail($project_id, 'large');
+        }
+
+        return [
+            'project_id'     => $project_id,
+            'project_ref'    => $project_ref,
+            'required'       => $required,
+            'committed'      => $committed,
+            'target'         => $target,
+            'project_stage'  => $project_stage,
+            'percent'        => $percent,
+            'status'         => $status_data['label'],
+            'bar_color'      => $status_data['bar_color'],
+            'status_cls'     => $status_data['class'],
+            'description'    => $description,
+            'volunteer_url'  => $volunteer_url,
+            'qr_url'         => $qr_url,
+            'image_html'     => $image_html,
+        ];
+    }
+}

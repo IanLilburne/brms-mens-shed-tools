@@ -16,7 +16,7 @@ if (!function_exists('shed_tv_dashboard_render')) {
         $stage_labels = shed_get_stage_labels();
 
         if (!$projects) {
-            return '<p>No projects found.</p>';
+            return '<p>No projects in this category. Try selecting "All".</p>';
         }
 
         ob_start();
@@ -343,116 +343,95 @@ if (!function_exists('shed_tv_dashboard_render')) {
                 <div class="splide__track">
                     <ul class="splide__list">
 
-                        <?php foreach ($projects as $project): ?>
-                            <?php
-                            $project_ref   = get_post_meta($project->ID, 'project_ref', true);
-                            $required      = intval(get_post_meta($project->ID, 'hours_required', true));
-                            $committed     = intval(get_post_meta($project->ID, 'hours_committed', true));
-                            $target        = get_post_meta($project->ID, 'completion_target_date', true);
-                            $project_stage = get_post_meta($project->ID, 'project_stage', true);
-                            $volunteers = shed_get_project_recent_volunteers($project->ID, 4);
+<?php foreach ($projects as $project): ?>
+    <?php
+    $project_data = shed_get_tv_dashboard_project_data($project);
+    $volunteers   = shed_get_project_recent_volunteers($project->ID, 4);
 
-                            $percent = $required > 0 ? min(100, round(($committed / $required) * 100)) : 0;
+    if (!$project_data) {
+        continue;
+    }
+    ?>
 
-                            if ($project_stage === '') {
-                                $project_stage = 'quote';
-                            }
+    <li class="splide__slide">
+        <div class="shed-tv-slide">
+            <div class="shed-tv-left">
+                <div class="shed-tv-top">
+                    <div class="shed-tv-title"><?php echo esc_html($project->post_title); ?></div>
 
-                            $status_data = shed_get_project_dashboard_status($project->ID);
-                            $status      = $status_data['label'];
-                            $bar_color   = $status_data['bar_color'];
-                            $status_cls  = $status_data['class'];
+                    <?php if ($project_data['project_ref']): ?>
+                        <div class="shed-tv-project-ref">Project <?php echo esc_html($project_data['project_ref']); ?></div>
+                    <?php endif; ?>
 
-                            $description = wp_trim_words(wp_strip_all_tags($project->post_content), 24);
+                    <?php if ($project_data['project_stage']): ?>
+                        <div class="shed-tv-stage">
+                            <?php echo esc_html($stage_labels[$project_data['project_stage']] ?? $project_data['project_stage']); ?>
+                        </div>
+                    <?php endif; ?>
 
-                            $volunteer_url = add_query_arg('project_id', $project->ID, site_url('/home/members-area/projects-volunteer-signup/'));
-                            $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($volunteer_url);
+                    <div class="shed-tv-description">
+                        <?php echo esc_html($project_data['description']); ?>
+                    </div>
+                </div>
 
-                            $image_html = '';
-                            if (has_post_thumbnail($project->ID)) {
-                                $image_html = get_the_post_thumbnail($project->ID, 'large');
-                            }
-                            ?>
+                <div class="shed-tv-image-wrap">
+                    <?php if ($project_data['image_html']): ?>
+                        <?php echo $project_data['image_html']; ?>
+                    <?php else: ?>
+                        <div class="shed-tv-no-image">No project image yet</div>
+                    <?php endif; ?>
+                </div>
 
-                            <li class="splide__slide">
-                                <div class="shed-tv-slide">
-                                    <div class="shed-tv-left">
-                                        <div class="shed-tv-top">
-                                            <div class="shed-tv-title"><?php echo esc_html($project->post_title); ?></div>
+                <div class="shed-tv-bottom">
+                    <div class="shed-tv-meta">
+                        <div class="shed-tv-meta-row">
+                            <span class="shed-tv-label">Completion target date:</span>
+                            <?php echo $project_data['target'] ? esc_html($project_data['target']) : 'Not set'; ?>
+                        </div>
+                    </div>
 
-                                            <?php if ($project_ref): ?>
-                                                <div class="shed-tv-project-ref">Project <?php echo esc_html($project_ref); ?></div>
-                                            <?php endif; ?>
+                    <div class="shed-tv-hours">
+                        <?php echo esc_html($project_data['committed']); ?> of <?php echo esc_html($project_data['required']); ?> hours
+                    </div>
 
-                                            <?php if ($project_stage): ?>
-                                                <div class="shed-tv-stage">
-                                                    <?php echo esc_html($stage_labels[$project_stage] ?? $project_stage); ?>
-                                                </div>
-                                            <?php endif; ?>
+                    <div class="shed-tv-progress">
+                        <div class="shed-tv-progress-bar" style="width: <?php echo esc_attr($project_data['percent']); ?>%; background: <?php echo esc_attr($project_data['bar_color']); ?>;"></div>
+                        <div class="shed-tv-progress-percent"><?php echo esc_html($project_data['percent']); ?>%</div>
+                    </div>
+                </div>
+            </div>
 
-                                            <div class="shed-tv-description">
-                                                <?php echo esc_html($description); ?>
-                                            </div>
-                                        </div>
+            <div class="shed-tv-right">
+                <div class="shed-tv-status <?php echo esc_attr($project_data['status_cls']); ?>">
+                    <?php echo esc_html($project_data['status']); ?>
+                </div>
 
-                                        <div class="shed-tv-image-wrap">
-                                            <?php if ($image_html): ?>
-                                                <?php echo $image_html; ?>
-                                            <?php else: ?>
-                                                <div class="shed-tv-no-image">No project image yet</div>
-                                            <?php endif; ?>
-                                        </div>
+                <div class="shed-tv-qr-block">
+                    <div class="shed-tv-qr-title">Scan to join this project</div>
+                    <img src="<?php echo esc_url($project_data['qr_url']); ?>" alt="QR code for volunteering">
+                    <div class="shed-tv-qr-caption">Opens this project’s volunteer form</div>
+                </div>
 
-                                        <div class="shed-tv-bottom">
-                                            <div class="shed-tv-meta">
-                                                <div class="shed-tv-meta-row">
-                                                    <span class="shed-tv-label">Completion target date:</span>
-                                                    <?php echo $target ? esc_html($target) : 'Not set'; ?>
-                                                </div>
-                                            </div>
+                <div class="shed-tv-volunteers">
+                    <div class="shed-tv-volunteers-title">Recent volunteers</div>
 
-                                            <div class="shed-tv-hours">
-                                                <?php echo esc_html($committed); ?> of <?php echo esc_html($required); ?> hours
-                                            </div>
-
-                                            <div class="shed-tv-progress">
-                                                <div class="shed-tv-progress-bar" style="width: <?php echo esc_attr($percent); ?>%; background: <?php echo esc_attr($bar_color); ?>;"></div>
-                                                <div class="shed-tv-progress-percent"><?php echo esc_html($percent); ?>%</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="shed-tv-right">
-                                        <div class="shed-tv-status <?php echo esc_attr($status_cls); ?>">
-                                            <?php echo esc_html($status); ?>
-                                        </div>
-
-                                        <div class="shed-tv-qr-block">
-                                            <div class="shed-tv-qr-title">Scan to join this project</div>
-                                            <img src="<?php echo esc_url($qr_url); ?>" alt="QR code for volunteering">
-                                            <div class="shed-tv-qr-caption">Opens this project’s volunteer form</div>
-                                        </div>
-
-                                        <div class="shed-tv-volunteers">
-                                            <div class="shed-tv-volunteers-title">Recent volunteers</div>
-
-                                            <?php if ($volunteers): ?>
-                                                <ul class="shed-tv-volunteers-list">
-                                                   <?php foreach ($volunteers as $v): ?>
-    <?php $volunteer = shed_get_volunteer_signup_summary($v->ID); ?>
-    <li>
-        <?php echo esc_html($volunteer['name']); ?>, <?php echo esc_html($volunteer['hours']); ?>h
+                    <?php if ($volunteers): ?>
+                        <ul class="shed-tv-volunteers-list">
+                            <?php foreach ($volunteers as $v): ?>
+                                <?php $volunteer = shed_get_volunteer_signup_summary($v->ID); ?>
+                                <li>
+                                    <?php echo esc_html($volunteer['name']); ?>, <?php echo esc_html($volunteer['hours']); ?>h
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php else: ?>
+                        <div>No volunteers yet</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
     </li>
 <?php endforeach; ?>
-                                                </ul>
-                                            <?php else: ?>
-                                                <div>No volunteers yet</div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
-                        <?php endforeach; ?>
 
                     </ul>
                 </div>
