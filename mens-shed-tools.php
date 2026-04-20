@@ -17,4 +17,5 @@ define('MENS_SHED_TOOLS_URL', plugin_dir_url(__FILE__));
 
 require_once MENS_SHED_TOOLS_PATH . 'includes/helpers.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/assets.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard-data.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard.php';
