@@ -350,6 +350,7 @@ if (!function_exists('shed_tv_dashboard_render')) {
                             $committed     = intval(get_post_meta($project->ID, 'hours_committed', true));
                             $target        = get_post_meta($project->ID, 'completion_target_date', true);
                             $project_stage = get_post_meta($project->ID, 'project_stage', true);
+                            $volunteers = shed_get_project_recent_volunteers($project->ID, 4);
 
                             $percent = $required > 0 ? min(100, round(($committed / $required) * 100)) : 0;
 
@@ -366,19 +367,6 @@ if (!function_exists('shed_tv_dashboard_render')) {
 
                             $volunteer_url = add_query_arg('project_id', $project->ID, site_url('/home/members-area/projects-volunteer-signup/'));
                             $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($volunteer_url);
-
-                            $volunteers = get_posts([
-                                'post_type'      => 'volunteer_signup',
-                                'posts_per_page' => 4,
-                                'orderby'        => 'date',
-                                'order'          => 'DESC',
-                                'meta_query'     => [
-                                    [
-                                        'key'   => 'project_id',
-                                        'value' => $project->ID,
-                                    ]
-                                ]
-                            ]);
 
                             $image_html = '';
                             if (has_post_thumbnail($project->ID)) {
@@ -450,15 +438,12 @@ if (!function_exists('shed_tv_dashboard_render')) {
 
                                             <?php if ($volunteers): ?>
                                                 <ul class="shed-tv-volunteers-list">
-                                                    <?php foreach ($volunteers as $v): ?>
-                                                        <?php
-                                                        $name  = get_post_meta($v->ID, 'volunteer_name', true);
-                                                        $hours = get_post_meta($v->ID, 'volunteer_hours', true);
-                                                        ?>
-                                                        <li>
-                                                            <?php echo esc_html($name); ?>, <?php echo esc_html($hours); ?>h
-                                                        </li>
-                                                    <?php endforeach; ?>
+                                                   <?php foreach ($volunteers as $v): ?>
+    <?php $volunteer = shed_get_volunteer_signup_summary($v->ID); ?>
+    <li>
+        <?php echo esc_html($volunteer['name']); ?>, <?php echo esc_html($volunteer['hours']); ?>h
+    </li>
+<?php endforeach; ?>
                                                 </ul>
                                             <?php else: ?>
                                                 <div>No volunteers yet</div>

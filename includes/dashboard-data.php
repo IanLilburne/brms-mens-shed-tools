@@ -109,3 +109,29 @@ if (!function_exists('shed_get_project_dashboard_status')) {
         ];
     }
 }
+
+if (!function_exists('shed_get_project_recent_volunteers')) {
+    function shed_get_project_recent_volunteers($project_id, $limit = 4) {
+        return get_posts([
+            'post_type'      => 'volunteer_signup',
+            'posts_per_page' => intval($limit),
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'meta_query'     => [
+                [
+                    'key'   => 'project_id',
+                    'value' => $project_id,
+                ]
+            ]
+        ]);
+    }
+}
+
+if (!function_exists('shed_get_volunteer_signup_summary')) {
+    function shed_get_volunteer_signup_summary($signup_post_id) {
+        return [
+            'name'  => get_post_meta($signup_post_id, 'volunteer_name', true),
+            'hours' => get_post_meta($signup_post_id, 'volunteer_hours', true),
+        ];
+    }
+}
