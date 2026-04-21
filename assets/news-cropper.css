@@ -1,0 +1,100 @@
+#shed-cropper-modal {
+  display: none;
+}
+
+#shed-cropper-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 99998;
+}
+
+#shed-cropper-panel {
+  position: fixed;
+  top: 5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(95vw, 980px);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  z-index: 99999;
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.shed-cropper-wrap {
+  width: 100%;
+  height: 60vh;
+  min-height: 320px;
+  background: #f3f3f3;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+#shed-cropper-image {
+  display: block;
+  max-width: 100%;
+}
+
+.shed-cropper-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.shed-cropper-buttons button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#forminator-module-807 .forminator-field-textarea-2 {
+  display: none !important;
+}
+
+#shed-cropper-cancel {
+  background: #ddd;
+}
+
+#shed-cropper-apply {
+  background: #2d6cdf;
+  color: #fff;
+}
+
+.cropper-container {
+  z-index: 100000 !important;
+}
+
+#forminator-module-807 textarea[name="textarea-2"] {
+  display: none !important;
+}
+
+#forminator-module-807 .forminator-field-textarea-2 {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  #shed-cropper-panel {
+    top: 2vh;
+    width: 96vw;
+    max-height: 96vh;
+    padding: 12px;
+  }
+
+  .shed-cropper-wrap {
+    height: 50vh;
+    min-height: 260px;
+  }
+
+  .shed-cropper-buttons {
+    flex-direction: column;
+  }
+
+  .shed-cropper-buttons button {
+    width: 100%;
+  }
+}

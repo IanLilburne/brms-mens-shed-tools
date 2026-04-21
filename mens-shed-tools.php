@@ -23,4 +23,22 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard-kiosk.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-signup.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-edit.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-preselect.php';
+//require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-dropdown.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/admin-cleanup.php';
+//require_once MENS_SHED_TOOLS_PATH . 'includes/news-submission.php';
+//require_once MENS_SHED_TOOLS_PATH . 'includes/news-cropper.php';
+
+$news_submission_file = MENS_SHED_TOOLS_PATH . 'includes/news-submission.php';
+if (file_exists($news_submission_file)) {
+    require_once $news_submission_file;
+}
+
+$news_cropper_file = MENS_SHED_TOOLS_PATH . 'includes/news-cropper.php';
+if (file_exists($news_cropper_file)) {
+    require_once $news_cropper_file;
+}
+
+$volunteer_dropdown_file = MENS_SHED_TOOLS_PATH . 'includes/volunteer-dropdown.php';
+if (file_exists($volunteer_dropdown_file)) {
+    require_once $volunteer_dropdown_file;
+}

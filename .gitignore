@@ -1,0 +1,19 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+debug.log
+
+# Node (if ever used)
+node_modules/
+
+# Env
+.env
+
+# WordPress
+wp-config.php
+
+# Temp uploads (if applicable)
+uploads/tmp/
