@@ -42,3 +42,8 @@ $volunteer_dropdown_file = MENS_SHED_TOOLS_PATH . 'includes/volunteer-dropdown.p
 if (file_exists($volunteer_dropdown_file)) {
     require_once $volunteer_dropdown_file;
 }
+
+$bootstrap_file = MENS_SHED_TOOLS_PATH . 'includes/bootstrap.php';
+if (file_exists($bootstrap_file)) {
+    require_once $bootstrap_file;
+}
