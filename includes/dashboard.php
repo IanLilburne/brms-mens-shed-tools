@@ -107,6 +107,13 @@ if (!function_exists('shed_tv_dashboard_render')) {
                     <div class="shed-tv-qr-caption">Opens this project’s volunteer form</div>
                 </div>
 
+                <?php if (!empty($project_data['project_contact'])): ?>
+                <div class="shed-tv-volunteers">
+                    <div class="shed-tv-volunteers-title">Project contact</div>
+                    <div><?php echo esc_html($project_data['project_contact']); ?></div>
+                </div>
+                <?php endif; ?>
+
                 <div class="shed-tv-volunteers">
                     <div class="shed-tv-volunteers-title">Recent volunteers</div>
 

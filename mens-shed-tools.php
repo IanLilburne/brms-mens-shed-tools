@@ -20,6 +20,7 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/assets.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard-data.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard-kiosk.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/project-creation.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-signup.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-edit.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-preselect.php';
