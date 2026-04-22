@@ -399,21 +399,16 @@ if (!function_exists('shed_process_news_submission_from_normalized')) {
             $post_content .= '<p><em>Submitted by ' . esc_html($contributor) . '</em></p>';
         }
 
-        $post_id = wp_insert_post([
-            'post_type'    => 'post',
-            'post_status'  => 'draft',
-            'post_title'   => $post_title,
-            'post_content' => $post_content,
-        ], true);
+        $post_service = new Shed_Post_Service();
 
-        if (is_wp_error($post_id)) {
-            error_log('SHED NEWS NORMALIZED: wp_insert_post failed trace_id=' . $trace_id . ' error=' . $post_id->get_error_message());
-            return false;
-        }
+$post_id = $post_service->create_draft($post_title, $post_content);
 
-        update_post_meta($post_id, 'shed_contributor_name', $contributor);
-        update_post_meta($post_id, 'shed_activity_date', $activity_date);
-        update_post_meta($post_id, 'shed_original_submission_text', $raw_story);
+if (is_wp_error($post_id)) {
+    error_log('SHED NEWS NORMALIZED: wp_insert_post failed trace_id=' . $trace_id . ' error=' . $post_id->get_error_message());
+    return false;
+}
+
+$post_service->update_meta($post_id, $contributor, $activity_date, $raw_story, $trace_id);
 
         if ($trace_id !== '') {
             update_post_meta($post_id, 'shed_trace_id', $trace_id);
@@ -429,12 +424,7 @@ if (!function_exists('shed_process_news_submission_from_normalized')) {
         if (count($attachment_ids) > 0) {
             $gallery_html = $image_service->build_gallery_html($attachment_ids);
 
-            if ($gallery_html !== '') {
-                wp_update_post([
-                    'ID'           => $post_id,
-                    'post_content' => $post_content . $gallery_html,
-                ]);
-            }
+            $post_service->append_content($post_id, $post_content . $gallery_html);
         }
 
         error_log('SHED NEWS NORMALIZED: completed trace_id=' . $trace_id . ' post_id=' . $post_id);

@@ -9,6 +9,7 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/modules/forms/class-submission-nor
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/forms/class-forminator-adapter.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/ai/class-ai-rewrite-service.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/images/class-image-service.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/modules/posts/class-post-service.php';
 
 function shed_tools_bootstrap() {
     $form_config = require MENS_SHED_TOOLS_PATH . 'includes/config/forms.php';
