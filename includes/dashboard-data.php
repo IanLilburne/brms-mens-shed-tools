@@ -136,6 +136,27 @@ if (!function_exists('shed_get_volunteer_signup_summary')) {
     }
 }
 
+if (!function_exists('shed_get_project_contact')) {
+    function shed_get_project_contact($project_id) {
+        $candidate_keys = [
+            'project_contact',
+            'project_lead',
+            'project_lead_name',
+            'lead_name',
+        ];
+
+        foreach ($candidate_keys as $meta_key) {
+            $value = trim((string) get_post_meta($project_id, $meta_key, true));
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+}
+
 if (!function_exists('shed_get_tv_dashboard_project_data')) {
     function shed_get_tv_dashboard_project_data($project) {
         $project_id = is_object($project) ? $project->ID : intval($project);
@@ -150,6 +171,7 @@ if (!function_exists('shed_get_tv_dashboard_project_data')) {
         $committed     = intval(get_post_meta($project_id, 'hours_committed', true));
         $target        = get_post_meta($project_id, 'completion_target_date', true);
         $project_stage = get_post_meta($project_id, 'project_stage', true);
+        $project_contact = shed_get_project_contact($project_id);
 
         if ($project_stage === '') {
             $project_stage = 'quote';
@@ -181,6 +203,7 @@ if (!function_exists('shed_get_tv_dashboard_project_data')) {
             'committed'      => $committed,
             'target'         => $target,
             'project_stage'  => $project_stage,
+            'project_contact' => $project_contact,
             'percent'        => $percent,
             'status'         => $status_data['label'],
             'bar_color'      => $status_data['bar_color'],
