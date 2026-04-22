@@ -342,12 +342,12 @@ if (!function_exists('shed_process_news_submission_from_normalized')) {
     function shed_process_news_submission_from_normalized(array $submission) {
         $trace_id = isset($submission['trace_id']) ? sanitize_text_field($submission['trace_id']) : '';
 
-        $raw_title       = isset($submission['title']) ? sanitize_text_field($submission['title']) : '';
-        $raw_story       = isset($submission['description']) ? sanitize_textarea_field($submission['description']) : '';
-        $contributor     = isset($submission['member_name']) ? sanitize_text_field($submission['member_name']) : '';
-        $activity_date   = isset($submission['event_date']) ? sanitize_text_field($submission['event_date']) : '';
-        $permission_tick = isset($submission['permission_tick']) ? $submission['permission_tick'] : '';
-        $uploaded_images = isset($submission['gallery_uploads']) ? $submission['gallery_uploads'] : [];
+        $raw_title        = isset($submission['title']) ? sanitize_text_field($submission['title']) : '';
+        $raw_story        = isset($submission['description']) ? sanitize_textarea_field($submission['description']) : '';
+        $contributor      = isset($submission['member_name']) ? sanitize_text_field($submission['member_name']) : '';
+        $activity_date    = isset($submission['event_date']) ? sanitize_text_field($submission['event_date']) : '';
+        $permission_tick  = isset($submission['permission_tick']) ? $submission['permission_tick'] : '';
+        $uploaded_images  = isset($submission['gallery_uploads']) ? $submission['gallery_uploads'] : [];
         $cropped_featured = '';
 
         if (isset($submission['featured_crop_base64']) && is_string($submission['featured_crop_base64'])) {
@@ -370,7 +370,7 @@ if (!function_exists('shed_process_news_submission_from_normalized')) {
         $post_content = '';
 
         $ai_service = new Shed_AI_Rewrite_Service();
-$ai_result = $ai_service->rewrite($raw_title, $raw_story, $contributor, $activity_date);
+        $ai_result = $ai_service->rewrite($raw_title, $raw_story, $contributor, $activity_date);
 
         if ($ai_result && (!empty($ai_result['title']) || !empty($ai_result['paragraph1']))) {
             if (!empty($ai_result['title'])) {
@@ -419,83 +419,15 @@ $ai_result = $ai_service->rewrite($raw_title, $raw_story, $contributor, $activit
             update_post_meta($post_id, 'shed_trace_id', $trace_id);
         }
 
-        $featured_attachment_id = shed_save_cropped_featured_image($cropped_featured, $post_id);
+        $image_service = new Shed_Image_Service();
+
+        $featured_attachment_id = $image_service->save_cropped_featured_image($cropped_featured, $post_id);
         error_log('SHED NEWS NORMALIZED: featured attachment result trace_id=' . $trace_id . ' result=' . print_r($featured_attachment_id, true));
 
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        require_once ABSPATH . 'wp-admin/includes/media.php';
-        require_once ABSPATH . 'wp-admin/includes/image.php';
-
-        $attachment_ids = [];
-        $forminator_temp_dir = WP_CONTENT_DIR . '/uploads/forminator/temp/';
-        $upload_items = [];
-
-        if (
-            is_array($uploaded_images) &&
-            isset($uploaded_images['file']) &&
-            is_array($uploaded_images['file'])
-        ) {
-            $upload_items = $uploaded_images['file'];
-        }
-
-        foreach ($upload_items as $index => $item) {
-            if (empty($item['success']) || empty($item['file_name'])) {
-                error_log('SHED NEWS NORMALIZED: skipping upload item at index ' . $index . ' trace_id=' . $trace_id . ' because success/file_name missing');
-                continue;
-            }
-
-            $file_name = basename($item['file_name']);
-            $source_path = $forminator_temp_dir . $file_name;
-
-            if (!file_exists($source_path)) {
-                error_log('SHED NEWS NORMALIZED: source file not found trace_id=' . $trace_id . ' path=' . $source_path);
-                continue;
-            }
-
-            $temp_copy = wp_tempnam($file_name);
-
-            if (!$temp_copy) {
-                error_log('SHED NEWS NORMALIZED: could not create temp file for ' . $file_name . ' trace_id=' . $trace_id);
-                continue;
-            }
-
-            if (!@copy($source_path, $temp_copy)) {
-                error_log('SHED NEWS NORMALIZED: could not copy source file to temp for ' . $file_name . ' trace_id=' . $trace_id);
-
-                if (file_exists($temp_copy)) {
-                    @unlink($temp_copy);
-                }
-                continue;
-            }
-
-            $file_array = [
-                'name'     => sanitize_file_name($file_name),
-                'tmp_name' => $temp_copy,
-            ];
-
-            $attachment_id = media_handle_sideload($file_array, $post_id);
-
-            if (is_wp_error($attachment_id)) {
-                error_log('SHED NEWS NORMALIZED: media_handle_sideload failed for ' . $file_name . ' trace_id=' . $trace_id . ' error=' . $attachment_id->get_error_message());
-
-                if (file_exists($temp_copy)) {
-                    @unlink($temp_copy);
-                }
-                continue;
-            }
-
-            $attachment_ids[] = $attachment_id;
-        }
+        $attachment_ids = $image_service->import_forminator_gallery_images($uploaded_images, $post_id);
 
         if (count($attachment_ids) > 0) {
-            $gallery_html = '';
-
-            foreach ($attachment_ids as $attachment_id) {
-                $img_html = wp_get_attachment_image($attachment_id, 'large');
-                if ($img_html) {
-                    $gallery_html .= '<p>' . $img_html . '</p>';
-                }
-            }
+            $gallery_html = $image_service->build_gallery_html($attachment_ids);
 
             if ($gallery_html !== '') {
                 wp_update_post([
