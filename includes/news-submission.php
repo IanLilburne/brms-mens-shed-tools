@@ -369,7 +369,8 @@ if (!function_exists('shed_process_news_submission_from_normalized')) {
         $post_title = ($raw_title !== '') ? $raw_title : 'Shed update';
         $post_content = '';
 
-        $ai_result = shed_ai_rewrite_story($raw_title, $raw_story, $contributor, $activity_date);
+        $ai_service = new Shed_AI_Rewrite_Service();
+$ai_result = $ai_service->rewrite($raw_title, $raw_story, $contributor, $activity_date);
 
         if ($ai_result && (!empty($ai_result['title']) || !empty($ai_result['paragraph1']))) {
             if (!empty($ai_result['title'])) {

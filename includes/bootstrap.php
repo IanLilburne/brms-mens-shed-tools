@@ -7,6 +7,7 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/helpers/logger.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/submissions/class-submission-processor.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/forms/class-submission-normalizer.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/forms/class-forminator-adapter.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/modules/ai/class-ai-rewrite-service.php';
 
 function shed_tools_bootstrap() {
     $form_config = require MENS_SHED_TOOLS_PATH . 'includes/config/forms.php';
