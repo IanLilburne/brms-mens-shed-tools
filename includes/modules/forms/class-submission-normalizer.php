@@ -30,18 +30,28 @@ class Shed_Submission_Normalizer {
             $mapped[$internal_key] = $this->extract_field_value($field_data_array, $forminator_key);
         }
 
-        $submission = [
-            'trace_id' => $this->generate_trace_id(),
-            'source' => 'forminator',
-            'form_id' => (int) $form_id,
-            'title' => (string) ($mapped['title'] ?? ''),
-            'description' => (string) ($mapped['description'] ?? ''),
-            'member_name' => (string) ($mapped['member_name'] ?? ''),
-            'event_date' => !empty($mapped['event_date']) ? (string) $mapped['event_date'] : null,
-            'featured_crop_base64' => !empty($mapped['featured_crop_base64']) ? (string) $mapped['featured_crop_base64'] : null,
-            'gallery_uploads' => $this->normalize_uploads($mapped['gallery_uploads'] ?? []),
-            'raw_payload' => $field_data_array,
-        ];
+       $submission = [
+    'trace_id' => $this->generate_trace_id(),
+    'source' => 'forminator',
+    'form_id' => (int) $form_id,
+    'title' => (string) ($mapped['title'] ?? ''),
+    'description' => (string) ($mapped['description'] ?? ''),
+    'member_name' => (string) ($mapped['member_name'] ?? ''),
+    'event_date' => !empty($mapped['event_date']) ? (string) $mapped['event_date'] : null,
+    'permission_tick' => $mapped['permission_tick'] ?? '',
+    'featured_crop_base64' => !empty($mapped['featured_crop_base64']) ? (string) $mapped['featured_crop_base64'] : null,
+    'gallery_uploads' => $this->normalize_uploads($mapped['gallery_uploads'] ?? []),
+    'raw_payload' => $field_data_array,
+];
+
+$this->logger->info('Submission normalized', [
+    'trace_id' => $submission['trace_id'] ?? '',
+    'form_id' => $submission['form_id'] ?? 0,
+    'title' => $submission['title'] ?? '',
+    'permission_tick' => $submission['permission_tick'] ?? '',
+    'has_featured_crop' => !empty($submission['featured_crop_base64']),
+    'gallery_type' => gettype($submission['gallery_uploads'] ?? null),
+]);
 
         return $submission;
     }

@@ -16,7 +16,7 @@ function shed_tools_bootstrap() {
     $normalizer = new Shed_Submission_Normalizer($form_config, $logger);
     $adapter = new Shed_Forminator_Adapter($normalizer, $processor, $logger);
 
-    $adapter->register();
+    //$adapter->register();
 
     $logger->info('Mens Shed Tools bootstrap complete');
 }

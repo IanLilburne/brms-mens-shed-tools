@@ -338,44 +338,32 @@ Date of event: " . $activity_date;
     }
 }
 
-if (!function_exists('shed_save_news_story_from_forminator')) {
-    function shed_save_news_story_from_forminator($field_data_array, $form_id) {
-        if ((int) $form_id !== 807) {
-            return $field_data_array;
-        }
+if (!function_exists('shed_process_news_submission_from_normalized')) {
+    function shed_process_news_submission_from_normalized(array $submission) {
+        $trace_id = isset($submission['trace_id']) ? sanitize_text_field($submission['trace_id']) : '';
 
-        $fields = [];
-
-        foreach ($field_data_array as $field) {
-            if (isset($field['name'])) {
-                $fields[$field['name']] = $field['value'] ?? '';
-            }
-        }
-
-        $raw_title       = isset($fields['text-1']) ? sanitize_text_field($fields['text-1']) : '';
-        $raw_story       = isset($fields['textarea-1']) ? sanitize_textarea_field($fields['textarea-1']) : '';
-        $contributor     = isset($fields['text-2']) ? sanitize_text_field($fields['text-2']) : '';
-        $activity_date   = isset($fields['date-1']) ? sanitize_text_field($fields['date-1']) : '';
-        $permission_tick = isset($fields['checkbox-1']) ? $fields['checkbox-1'] : '';
-        $uploaded_images = isset($fields['upload-1']) ? $fields['upload-1'] : '';
-
+        $raw_title       = isset($submission['title']) ? sanitize_text_field($submission['title']) : '';
+        $raw_story       = isset($submission['description']) ? sanitize_textarea_field($submission['description']) : '';
+        $contributor     = isset($submission['member_name']) ? sanitize_text_field($submission['member_name']) : '';
+        $activity_date   = isset($submission['event_date']) ? sanitize_text_field($submission['event_date']) : '';
+        $permission_tick = isset($submission['permission_tick']) ? $submission['permission_tick'] : '';
+        $uploaded_images = isset($submission['gallery_uploads']) ? $submission['gallery_uploads'] : [];
         $cropped_featured = '';
-        if (isset($fields['textarea-2']) && is_string($fields['textarea-2'])) {
-            $cropped_featured = $fields['textarea-2'];
-        } elseif (isset($_POST['textarea-2']) && is_string($_POST['textarea-2'])) {
-            $cropped_featured = wp_unslash($_POST['textarea-2']);
+
+        if (isset($submission['featured_crop_base64']) && is_string($submission['featured_crop_base64'])) {
+            $cropped_featured = $submission['featured_crop_base64'];
         }
 
-        error_log('SHED NEWS: textarea-2 length=' . strlen($cropped_featured));
+        error_log('SHED NEWS NORMALIZED: trace_id=' . $trace_id . ' cropped length=' . strlen($cropped_featured));
 
         if ($raw_story === '') {
-            error_log('SHED NEWS: missing story text, aborting');
-            return $field_data_array;
+            error_log('SHED NEWS NORMALIZED: missing story text, aborting trace_id=' . $trace_id);
+            return false;
         }
 
         if (empty($permission_tick)) {
-            error_log('SHED NEWS: permission checkbox not ticked, aborting');
-            return $field_data_array;
+            error_log('SHED NEWS NORMALIZED: permission checkbox not ticked, aborting trace_id=' . $trace_id);
+            return false;
         }
 
         $post_title = ($raw_title !== '') ? $raw_title : 'Shed update';
@@ -418,16 +406,20 @@ if (!function_exists('shed_save_news_story_from_forminator')) {
         ], true);
 
         if (is_wp_error($post_id)) {
-            error_log('SHED NEWS: wp_insert_post failed: ' . $post_id->get_error_message());
-            return $field_data_array;
+            error_log('SHED NEWS NORMALIZED: wp_insert_post failed trace_id=' . $trace_id . ' error=' . $post_id->get_error_message());
+            return false;
         }
 
         update_post_meta($post_id, 'shed_contributor_name', $contributor);
         update_post_meta($post_id, 'shed_activity_date', $activity_date);
         update_post_meta($post_id, 'shed_original_submission_text', $raw_story);
 
+        if ($trace_id !== '') {
+            update_post_meta($post_id, 'shed_trace_id', $trace_id);
+        }
+
         $featured_attachment_id = shed_save_cropped_featured_image($cropped_featured, $post_id);
-        error_log('SHED NEWS: featured attachment result=' . print_r($featured_attachment_id, true));
+        error_log('SHED NEWS NORMALIZED: featured attachment result trace_id=' . $trace_id . ' result=' . print_r($featured_attachment_id, true));
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
@@ -447,7 +439,7 @@ if (!function_exists('shed_save_news_story_from_forminator')) {
 
         foreach ($upload_items as $index => $item) {
             if (empty($item['success']) || empty($item['file_name'])) {
-                error_log('SHED NEWS: skipping upload item at index ' . $index . ' because success/file_name missing');
+                error_log('SHED NEWS NORMALIZED: skipping upload item at index ' . $index . ' trace_id=' . $trace_id . ' because success/file_name missing');
                 continue;
             }
 
@@ -455,19 +447,19 @@ if (!function_exists('shed_save_news_story_from_forminator')) {
             $source_path = $forminator_temp_dir . $file_name;
 
             if (!file_exists($source_path)) {
-                error_log('SHED NEWS: source file not found: ' . $source_path);
+                error_log('SHED NEWS NORMALIZED: source file not found trace_id=' . $trace_id . ' path=' . $source_path);
                 continue;
             }
 
             $temp_copy = wp_tempnam($file_name);
 
             if (!$temp_copy) {
-                error_log('SHED NEWS: could not create temp file for ' . $file_name);
+                error_log('SHED NEWS NORMALIZED: could not create temp file for ' . $file_name . ' trace_id=' . $trace_id);
                 continue;
             }
 
             if (!@copy($source_path, $temp_copy)) {
-                error_log('SHED NEWS: could not copy source file to temp for ' . $file_name);
+                error_log('SHED NEWS NORMALIZED: could not copy source file to temp for ' . $file_name . ' trace_id=' . $trace_id);
 
                 if (file_exists($temp_copy)) {
                     @unlink($temp_copy);
@@ -483,7 +475,7 @@ if (!function_exists('shed_save_news_story_from_forminator')) {
             $attachment_id = media_handle_sideload($file_array, $post_id);
 
             if (is_wp_error($attachment_id)) {
-                error_log('SHED NEWS: media_handle_sideload failed for ' . $file_name . ': ' . $attachment_id->get_error_message());
+                error_log('SHED NEWS NORMALIZED: media_handle_sideload failed for ' . $file_name . ' trace_id=' . $trace_id . ' error=' . $attachment_id->get_error_message());
 
                 if (file_exists($temp_copy)) {
                     @unlink($temp_copy);
@@ -511,6 +503,57 @@ if (!function_exists('shed_save_news_story_from_forminator')) {
                 ]);
             }
         }
+
+        error_log('SHED NEWS NORMALIZED: completed trace_id=' . $trace_id . ' post_id=' . $post_id);
+
+        return $post_id;
+    }
+}
+
+if (!function_exists('shed_build_normalized_submission_from_forminator_fields')) {
+    function shed_build_normalized_submission_from_forminator_fields($field_data_array, $form_id) {
+
+        $fields = [];
+
+        foreach ($field_data_array as $field) {
+            if (isset($field['name'])) {
+                $fields[$field['name']] = $field['value'] ?? '';
+            }
+        }
+
+        $cropped_featured = '';
+        if (isset($fields['textarea-2']) && is_string($fields['textarea-2'])) {
+            $cropped_featured = $fields['textarea-2'];
+        } elseif (isset($_POST['textarea-2']) && is_string($_POST['textarea-2'])) {
+            $cropped_featured = wp_unslash($_POST['textarea-2']);
+        }
+
+        return [
+            'trace_id' => 'legacy_' . wp_generate_password(8, false, false),
+            'source' => 'forminator',
+            'form_id' => (int) $form_id,
+            'title' => $fields['text-1'] ?? '',
+            'description' => $fields['textarea-1'] ?? '',
+            'member_name' => $fields['text-2'] ?? '',
+            'event_date' => $fields['date-1'] ?? '',
+            'permission_tick' => $fields['checkbox-1'] ?? '',
+            'gallery_uploads' => $fields['upload-1'] ?? '',
+            'featured_crop_base64' => $cropped_featured,
+            'raw_payload' => $field_data_array,
+        ];
+    }
+}
+
+if (!function_exists('shed_save_news_story_from_forminator')) {
+    function shed_save_news_story_from_forminator($field_data_array, $form_id) {
+
+        if ((int) $form_id !== 807) {
+            return $field_data_array;
+        }
+
+        $submission = shed_build_normalized_submission_from_forminator_fields($field_data_array, $form_id);
+
+        shed_process_news_submission_from_normalized($submission);
 
         return $field_data_array;
     }

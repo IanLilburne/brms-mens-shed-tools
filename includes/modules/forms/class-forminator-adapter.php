@@ -3,8 +3,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Shed_Forminator_Adapter {
-
+class Shed_Forminator_Adapter
+{
     private $normalizer;
     private $processor;
     private $logger;
@@ -19,8 +19,11 @@ class Shed_Forminator_Adapter {
         $this->logger = $logger;
     }
 
-    public function register() {
-        add_action(
+    public function register()
+    {
+        $this->logger->info('Registering Forminator adapter hook');
+
+        add_filter(
             'forminator_custom_form_submit_field_data',
             [$this, 'handle_submission'],
             10,
@@ -28,7 +31,8 @@ class Shed_Forminator_Adapter {
         );
     }
 
-    public function handle_submission($field_data_array, $form_id) {
+    public function handle_submission($field_data_array, $form_id)
+    {
         $this->logger->info('Forminator adapter hook fired', [
             'form_id' => $form_id,
             'field_count' => is_array($field_data_array) ? count($field_data_array) : 0,
