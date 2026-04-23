@@ -21,6 +21,7 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard-data.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard-kiosk.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/project-creation.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/project-edit.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-signup.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-edit.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-preselect.php';
@@ -48,3 +49,4 @@ $bootstrap_file = MENS_SHED_TOOLS_PATH . 'includes/bootstrap.php';
 if (file_exists($bootstrap_file)) {
     require_once $bootstrap_file;
 }
+
