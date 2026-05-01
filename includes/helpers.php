@@ -21,7 +21,7 @@ if (!function_exists('shed_get_project_type')) {
     function shed_get_project_type($post_id) {
         $project_type = sanitize_key((string) get_post_meta($post_id, 'project_type', true));
 
-        if (!in_array($project_type, ['project', 'idea', 'event'], true)) {
+        if (!in_array($project_type, ['project', 'idea', 'event', 'video'], true)) {
             return 'project';
         }
 
@@ -75,5 +75,23 @@ if (!function_exists('shed_normalize_date_input')) {
         }
 
         return '';
+    }
+}
+
+if (!function_exists('shed_render_cropper_assets')) {
+    function shed_render_cropper_assets() {
+        static $rendered = false;
+
+        if ($rendered) {
+            return;
+        }
+
+        $rendered = true;
+        ?>
+        <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
+        <link rel="stylesheet" href="<?php echo esc_url(MENS_SHED_TOOLS_URL . 'assets/news-cropper.css'); ?>?ver=<?php echo esc_attr(file_exists(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.css') ? filemtime(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.css') : '1.0'); ?>">
+        <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+        <script src="<?php echo esc_url(MENS_SHED_TOOLS_URL . 'assets/news-cropper.js'); ?>?ver=<?php echo esc_attr(file_exists(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.js') ? filemtime(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.js') : '1.0'); ?>"></script>
+        <?php
     }
 }

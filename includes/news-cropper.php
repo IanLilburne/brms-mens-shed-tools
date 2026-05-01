@@ -6,7 +6,13 @@ if (!defined('ABSPATH')) {
 
 if (!function_exists('shed_news_cropper_should_load')) {
     function shed_news_cropper_should_load() {
-        return is_page('post-submissions');
+        if (is_page('post-submissions')) {
+            return true;
+        }
+
+        global $post;
+
+        return is_a($post, 'WP_Post') && has_shortcode((string) $post->post_content, 'shed_news_submission_form');
     }
 }
 
@@ -35,14 +41,14 @@ if (!function_exists('shed_enqueue_news_cropper_assets')) {
             'shed-news-cropper-css',
             MENS_SHED_TOOLS_URL . 'assets/news-cropper.css',
             ['cropperjs'],
-            filemtime(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.css')
+            file_exists(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.css') ? filemtime(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.css') : '1.0'
         );
 
         wp_enqueue_script(
             'shed-news-cropper-js',
             MENS_SHED_TOOLS_URL . 'assets/news-cropper.js',
             ['cropperjs'],
-            filemtime(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.js'),
+            file_exists(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.js') ? filemtime(MENS_SHED_TOOLS_PATH . 'assets/news-cropper.js') : '1.0',
             true
         );
     }
@@ -56,7 +62,7 @@ if (!function_exists('shed_render_news_cropper_modal')) {
             return;
         }
         ?>
-        <div id="shed-cropper-modal">
+        <div id="shed-cropper-modal" style="display:none;">
             <div id="shed-cropper-backdrop"></div>
             <div id="shed-cropper-panel">
                 <div class="shed-cropper-wrap">

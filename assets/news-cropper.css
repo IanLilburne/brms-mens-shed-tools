@@ -52,10 +52,6 @@
   cursor: pointer;
 }
 
-#forminator-module-807 .forminator-field-textarea-2 {
-  display: none !important;
-}
-
 #shed-cropper-cancel {
   background: #ddd;
 }
@@ -67,14 +63,6 @@
 
 .cropper-container {
   z-index: 100000 !important;
-}
-
-#forminator-module-807 textarea[name="textarea-2"] {
-  display: none !important;
-}
-
-#forminator-module-807 .forminator-field-textarea-2 {
-  display: none !important;
 }
 
 @media (max-width: 700px) {

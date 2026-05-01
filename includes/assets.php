@@ -35,14 +35,14 @@ if (!function_exists('shed_enqueue_splide_assets')) {
             'shed-dashboard-css',
             MENS_SHED_TOOLS_URL . 'assets/dashboard.css',
             array('splide-css'),
-            '1.0'
+            file_exists(MENS_SHED_TOOLS_PATH . 'assets/dashboard.css') ? filemtime(MENS_SHED_TOOLS_PATH . 'assets/dashboard.css') : '1.0'
         );
 
         wp_enqueue_script(
             'shed-dashboard-js',
             MENS_SHED_TOOLS_URL . 'assets/dashboard.js',
             array('splide-js'),
-            '1.0',
+            file_exists(MENS_SHED_TOOLS_PATH . 'assets/dashboard.js') ? filemtime(MENS_SHED_TOOLS_PATH . 'assets/dashboard.js') : '1.0',
             true
         );
 

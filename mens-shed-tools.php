@@ -23,12 +23,15 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/dashboard-kiosk.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/project-creation.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/project-edit.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-signup.php';
-require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-edit.php';
-require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-preselect.php';
-//require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-dropdown.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-commitments-report.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/admin-cleanup.php';
-//require_once MENS_SHED_TOOLS_PATH . 'includes/news-submission.php';
-//require_once MENS_SHED_TOOLS_PATH . 'includes/news-cropper.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/attendance.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/modules/ai/class-ai-rewrite-service.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/modules/images/class-image-service.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/modules/posts/class-post-service.php';
+
+register_activation_hook(__FILE__, 'shed_attendance_activate');
+register_deactivation_hook(__FILE__, 'shed_attendance_deactivate');
 
 $news_submission_file = MENS_SHED_TOOLS_PATH . 'includes/news-submission.php';
 if (file_exists($news_submission_file)) {
@@ -38,15 +41,5 @@ if (file_exists($news_submission_file)) {
 $news_cropper_file = MENS_SHED_TOOLS_PATH . 'includes/news-cropper.php';
 if (file_exists($news_cropper_file)) {
     require_once $news_cropper_file;
-}
-
-$volunteer_dropdown_file = MENS_SHED_TOOLS_PATH . 'includes/volunteer-dropdown.php';
-if (file_exists($volunteer_dropdown_file)) {
-    require_once $volunteer_dropdown_file;
-}
-
-$bootstrap_file = MENS_SHED_TOOLS_PATH . 'includes/bootstrap.php';
-if (file_exists($bootstrap_file)) {
-    require_once $bootstrap_file;
 }
 

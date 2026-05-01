@@ -84,18 +84,42 @@
             .shed-tv-description {
                 font-size: 1.3rem;
                 line-height: 1.32;
-                margin-bottom: 18px;
                 color: #222;
+                overflow: hidden;
+            }
+
+            .shed-tv-description.is-collapsed {
                 display: -webkit-box;
                 -webkit-line-clamp: 4;
                 -webkit-box-orient: vertical;
-                overflow: hidden;
+            }
+
+            .shed-tv-description-wrap {
+                margin-bottom: 18px;
+            }
+
+            .shed-tv-description.is-expanded {
+                display: block;
+                -webkit-line-clamp: unset;
+                overflow: visible;
+            }
+
+            .shed-tv-description-toggle {
+                margin-top: 10px;
+                padding: 0;
+                border: none;
+                background: none;
+                color: #0a7f00;
+                font-size: 1rem;
+                font-weight: 700;
+                cursor: pointer;
             }
 
             .shed-tv-image-wrap {
                 position: relative;
                 width: 100%;
                 aspect-ratio: 16 / 9;
+                max-height: 420px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -121,11 +145,39 @@
                 text-align: center;
             }
 
+            .shed-tv-video-image-wrap::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.45));
+                pointer-events: none;
+            }
+
+            .shed-tv-video-play-overlay {
+                position: absolute;
+                left: 50%;
+                bottom: 24px;
+                z-index: 2;
+                transform: translateX(-50%);
+                padding: 16px 28px;
+                border: 0;
+                border-radius: 10px;
+                background: #0a7f00;
+                color: #fff;
+                font-size: 1.2rem;
+                font-weight: 700;
+                cursor: pointer;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+            }
+
             .shed-tv-bottom {
                 margin-top: auto;
             }
 
             .shed-tv-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px 24px;
                 font-size: 1.25rem;
                 line-height: 1.4;
                 margin-bottom: 14px;
@@ -133,6 +185,10 @@
 
             .shed-tv-meta-row {
                 margin-bottom: 10px;
+            }
+
+            .shed-tv-meta-under-media {
+                margin-top: 12px;
             }
 
             .shed-tv-label {
@@ -197,39 +253,6 @@
                 color: #a36b00;
             }
 
-            .shed-tv-qr-block {
-                text-align: center;
-                background: #fafafa;
-                border-radius: 16px;
-                padding: 20px;
-                animation: shedPulse 3s infinite;
-            }
-
-            @keyframes shedPulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.02); }
-                100% { transform: scale(1); }
-            }
-
-            .shed-tv-qr-title {
-                font-size: 1.45rem;
-                font-weight: 700;
-                margin-bottom: 12px;
-            }
-
-            .shed-tv-qr-block img {
-                width: 180px;
-                height: 180px;
-                display: block;
-                margin: 0 auto 10px auto;
-            }
-
-            .shed-tv-qr-caption {
-                font-size: 1.05rem;
-                color: #444;
-                line-height: 1.3;
-            }
-
             .shed-tv-volunteers {
                 background: #fafafa;
                 border-radius: 16px;
@@ -254,16 +277,226 @@
                 border-bottom: 1px solid #eee;
             }
 
-            .shed-tv-fullscreen-controls {
-                position: fixed;
-                top: 14px;
-                right: 14px;
-                z-index: 9999;
+            .shed-tv-volunteers-list li strong {
+                display: inline-block;
+                margin-right: 6px;
+            }
+
+            .shed-tv-volunteers-list li div {
+                margin-top: 6px;
+                color: #555;
+                font-size: 1rem;
+            }
+
+            .shed-tv-tasks-panel {
+                padding: 16px;
+            }
+
+            .shed-tv-tasks-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
                 display: flex;
+                flex-direction: column;
                 gap: 10px;
             }
 
-            .shed-tv-fullscreen-controls button {
+            .shed-tv-task {
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 10px;
+                padding: 10px;
+            }
+
+            .shed-tv-task--unassigned {
+                background: #fff2cc;
+            }
+
+            .shed-tv-task--assigned {
+                background: #f3f4f6;
+            }
+
+            .shed-tv-task--done {
+                background: #d9ead3;
+            }
+
+            .shed-tv-task-main {
+                margin-bottom: 8px;
+            }
+
+            .shed-tv-task-title {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 10px;
+                align-items: baseline;
+                font-size: 1.12rem;
+                line-height: 1.25;
+                font-weight: 700;
+            }
+
+            .shed-tv-task-name {
+                flex: 0 1 auto;
+            }
+
+            .shed-tv-task-hours {
+                white-space: nowrap;
+                color: #555;
+                font-size: 1rem;
+            }
+
+            .shed-tv-task-volunteer {
+                color: #444;
+                font-size: 1rem;
+                font-weight: 400;
+            }
+
+            .shed-tv-task-form {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto auto;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .shed-tv-task-form input[type="text"] {
+                width: 100%;
+                min-width: 0;
+                padding: 9px 10px;
+                border: 1px solid rgba(0, 0, 0, 0.18);
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.72);
+                box-sizing: border-box;
+                font-size: 1rem;
+            }
+
+            .shed-tv-task-form input[type="text"]:focus {
+                outline: 3px solid rgba(10, 127, 0, 0.2);
+                border-color: #0a7f00;
+            }
+
+            .shed-tv-task-form button {
+                padding: 9px 11px;
+                border: 0;
+                border-radius: 8px;
+                background: #0a7f00;
+                color: #fff;
+                font-size: 0.95rem;
+                font-weight: 700;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+
+            .shed-tv-task-form .shed-tv-task-remove {
+                background: #666;
+            }
+
+            .shed-tv-task-updated {
+                position: fixed;
+                left: 50%;
+                top: calc(env(safe-area-inset-top, 0px) + 30px);
+                z-index: 10000;
+                transform: translateX(-50%);
+                padding: 12px 18px;
+                border-radius: 10px;
+                background: #0a7f00;
+                color: #fff;
+                font-size: 1rem;
+                font-weight: 700;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+            }
+
+            .shed-tv-video-primary-button {
+                width: 100%;
+                padding: 16px 18px;
+                border: 0;
+                border-radius: 10px;
+                background: #0a7f00;
+                color: #fff;
+                font-size: 1.2rem;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .shed-tv-video-list-panel {
+                min-height: 0;
+            }
+
+            .shed-tv-video-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                max-height: 46vh;
+                overflow-y: auto;
+            }
+
+            .shed-tv-video-list li {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 10px;
+                align-items: center;
+                padding: 12px;
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 10px;
+                background: #fff;
+            }
+
+            .shed-tv-video-list li.is-current {
+                background: #e6f6e6;
+                border-color: rgba(10, 127, 0, 0.28);
+            }
+
+            .shed-tv-video-list-title {
+                display: block;
+                font-size: 1.05rem;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+
+            .shed-tv-video-list-meta {
+                display: block;
+                margin-top: 4px;
+                color: #555;
+                font-size: 0.95rem;
+            }
+
+            .shed-tv-video-open {
+                padding: 9px 12px;
+                border: 0;
+                border-radius: 8px;
+                background: #111;
+                color: #fff;
+                font-weight: 700;
+                cursor: pointer;
+            }
+
+            .shed-tv-video-primary-button.shed-tv-video-open {
+                padding: 16px 18px;
+                background: #0a7f00;
+                font-size: 1.2rem;
+            }
+
+            .shed-tv-fullscreen-controls {
+                position: fixed;
+                top: calc(env(safe-area-inset-top, 0px) + 30px) !important;
+                right: 14px;
+                z-index: 9999;
+            }
+
+            .shed-tv-menu-panel {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding-top: 4px;
+            }
+
+            .shed-tv-menu-toggle {
+                display: none;
+            }
+
+            .shed-tv-fullscreen-controls button,
+            .shed-tv-filter-control select {
                 font-size: 1rem;
                 padding: 10px 14px;
                 border: none;
@@ -273,19 +506,98 @@
                 cursor: pointer;
             }
 
-            .shed-filter-btn {
-                font-size: 1rem;
-                padding: 10px 14px;
-                border: none;
-                border-radius: 10px;
-                background: rgba(255, 255, 255, 0.9);
-                color: #111;
-                cursor: pointer;
+            .shed-tv-fullscreen-controls button.is-paused {
+                background: #0a7f00;
             }
 
-            .shed-filter-btn.active {
-                background: #0a7f00;
+            .shed-tv-filter-control {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 8px;
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.75);
                 color: #fff;
+                font-size: 0.9rem;
+                font-weight: 700;
+            }
+
+            .shed-tv-filter-control select {
+                background: rgba(255, 255, 255, 0.95);
+                color: #111;
+                padding: 6px 8px;
+            }
+
+            @media (max-width: 760px) {
+                #shedSplide,
+                #shedSplide .splide__track,
+                #shedSplide .splide__list,
+                #shedSplide .splide__slide,
+                .shed-tv-wrapper {
+                    width: 100vw !important;
+                    max-width: 100vw !important;
+                    margin-left: calc(50% - 50vw) !important;
+                    margin-right: calc(50% - 50vw) !important;
+                }
+
+                .shed-tv-slide {
+                    width: 100vw;
+                    padding: 26px 12px;
+                    gap: 16px;
+                }
+
+                .shed-tv-left,
+                .shed-tv-right {
+                    border-radius: 14px;
+                    padding: 18px;
+                    width: 100%;
+                    max-width: 100%;
+                }
+
+                .shed-tv-fullscreen-controls {
+                    top: calc(env(safe-area-inset-top, 0px) + 12px) !important;
+                    right: 10px;
+                    left: auto;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    gap: 8px;
+                }
+
+                .shed-tv-menu-toggle {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 92px;
+                }
+
+                .shed-tv-menu-panel {
+                    display: none;
+                    width: min(280px, calc(100vw - 20px));
+                    max-height: calc(100vh - 74px);
+                    overflow-y: auto;
+                    padding: 10px;
+                    border-radius: 12px;
+                    background: rgba(0, 0, 0, 0.82);
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+                }
+
+                .shed-tv-menu-panel.is-open {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 8px;
+                }
+
+                .shed-tv-menu-panel button,
+                .shed-tv-menu-panel .shed-tv-filter-control,
+                .shed-tv-menu-panel .shed-tv-filter-control select {
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+
+                .shed-tv-menu-panel .shed-tv-filter-control {
+                    justify-content: space-between;
+                }
             }
 
             @media (max-width: 1100px) {
@@ -336,4 +648,4 @@ body:has(.shed-tv-wrapper) .shed-tv-wrapper {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-}       
+}

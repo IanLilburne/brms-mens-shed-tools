@@ -5,54 +5,48 @@ if (!defined('ABSPATH')) {
 
 class Shed_Image_Service
 {
+    const MAX_NATIVE_GALLERY_IMAGES = 8;
+    const MAX_NATIVE_GALLERY_IMAGE_BYTES = 4194304;
+
     public function save_cropped_featured_image($base64_image, $post_id)
     {
         return shed_save_cropped_featured_image($base64_image, $post_id);
     }
 
-    public function import_forminator_gallery_images($uploaded_images, $post_id)
+    public function import_native_gallery_images($uploaded_files, $post_id)
     {
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
         require_once ABSPATH . 'wp-admin/includes/image.php';
 
         $attachment_ids = [];
-        $forminator_temp_dir = WP_CONTENT_DIR . '/uploads/forminator/temp/';
-        $upload_items = [];
+        $upload_items = $this->normalize_native_uploads($uploaded_files);
 
-        if (
-            is_array($uploaded_images) &&
-            isset($uploaded_images['file']) &&
-            is_array($uploaded_images['file'])
-        ) {
-            $upload_items = $uploaded_images['file'];
+        if (empty($upload_items)) {
+            return $attachment_ids;
         }
 
-        foreach ($upload_items as $index => $item) {
-            if (empty($item['success']) || empty($item['file_name'])) {
-                error_log('SHED IMAGE SERVICE: skipping upload item at index ' . $index . ' because success/file_name missing');
-                continue;
-            }
+        foreach ($upload_items as $file) {
+            $file_name = isset($file['name']) ? (string) $file['name'] : '';
+            $tmp_name = isset($file['tmp_name']) ? (string) $file['tmp_name'] : '';
+            $error = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+            $size = isset($file['size']) ? (int) $file['size'] : 0;
 
-            $file_name = basename($item['file_name']);
-            $source_path = $forminator_temp_dir . $file_name;
-
-            if (!file_exists($source_path)) {
-                error_log('SHED IMAGE SERVICE: source file not found: ' . $source_path);
+            if (
+                $file_name === '' ||
+                $error === UPLOAD_ERR_NO_FILE ||
+                $error !== UPLOAD_ERR_OK ||
+                $size > self::MAX_NATIVE_GALLERY_IMAGE_BYTES ||
+                $tmp_name === '' ||
+                !is_uploaded_file($tmp_name)
+            ) {
                 continue;
             }
 
             $temp_copy = wp_tempnam($file_name);
 
-            if (!$temp_copy) {
-                error_log('SHED IMAGE SERVICE: could not create temp file for ' . $file_name);
-                continue;
-            }
-
-            if (!@copy($source_path, $temp_copy)) {
-                error_log('SHED IMAGE SERVICE: could not copy source file to temp for ' . $file_name);
-
-                if (file_exists($temp_copy)) {
+            if (!$temp_copy || !@copy($tmp_name, $temp_copy)) {
+                if ($temp_copy && file_exists($temp_copy)) {
                     @unlink($temp_copy);
                 }
                 continue;
@@ -66,8 +60,6 @@ class Shed_Image_Service
             $attachment_id = media_handle_sideload($file_array, $post_id);
 
             if (is_wp_error($attachment_id)) {
-                error_log('SHED IMAGE SERVICE: media_handle_sideload failed for ' . $file_name . ': ' . $attachment_id->get_error_message());
-
                 if (file_exists($temp_copy)) {
                     @unlink($temp_copy);
                 }
@@ -78,6 +70,32 @@ class Shed_Image_Service
         }
 
         return $attachment_ids;
+    }
+
+    private function normalize_native_uploads($uploaded_files)
+    {
+        if (!is_array($uploaded_files) || empty($uploaded_files['name'])) {
+            return [];
+        }
+
+        if (!is_array($uploaded_files['name'])) {
+            return [$uploaded_files];
+        }
+
+        $files = [];
+        $file_count = min(count($uploaded_files['name']), self::MAX_NATIVE_GALLERY_IMAGES);
+
+        for ($index = 0; $index < $file_count; $index++) {
+            $files[] = [
+                'name'     => $uploaded_files['name'][$index] ?? '',
+                'type'     => $uploaded_files['type'][$index] ?? '',
+                'tmp_name' => $uploaded_files['tmp_name'][$index] ?? '',
+                'error'    => $uploaded_files['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+                'size'     => $uploaded_files['size'][$index] ?? 0,
+            ];
+        }
+
+        return $files;
     }
 
     public function build_gallery_html(array $attachment_ids)
