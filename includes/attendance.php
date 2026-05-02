@@ -4,17 +4,21 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SHED_ATTENDANCE_DB_VERSION', '1.4.0');
+define('SHED_ATTENDANCE_DB_VERSION', '1.4.1');
 
 add_action('admin_init', 'shed_attendance_maybe_install');
+add_action('rest_api_init', 'shed_attendance_maybe_install', 1);
 add_action('admin_menu', 'shed_attendance_admin_menu');
 add_action('rest_api_init', 'shed_attendance_register_routes');
 add_action('admin_post_shed_attendance_save_member', 'shed_attendance_handle_save_member');
 add_action('admin_post_shed_attendance_save_duty_settings', 'shed_attendance_handle_save_duty_settings');
 add_action('admin_post_shed_attendance_save_duty_rota', 'shed_attendance_handle_save_duty_rota');
 add_action('admin_post_shed_attendance_export_events', 'shed_attendance_handle_export_events');
+add_action('admin_post_shed_attendance_export_duration_report', 'shed_attendance_handle_export_duration_report');
 add_action('shed_attendance_daily_closeout', 'shed_attendance_run_daily_closeout');
 add_shortcode('shed_attendance_today', 'shed_attendance_today_shortcode');
+add_shortcode('shed_attendance_now', 'shed_attendance_now_shortcode');
+add_shortcode('shed_attendance_duration_report', 'shed_attendance_duration_report_shortcode');
 add_shortcode('shed_duty_rota', 'shed_duty_rota_shortcode');
 add_shortcode('shed_attendance_events', 'shed_attendance_events_shortcode');
 
@@ -55,7 +59,6 @@ if (!function_exists('shed_attendance_install_tables')) {
         dbDelta(
             "CREATE TABLE {$members_table} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-                client_event_id varchar(100) DEFAULT NULL,
                 card_id varchar(64) NOT NULL,
                 member_name varchar(190) NOT NULL,
                 handle varchar(100) NOT NULL DEFAULT '',
@@ -75,6 +78,7 @@ if (!function_exists('shed_attendance_install_tables')) {
         dbDelta(
             "CREATE TABLE {$events_table} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                client_event_id varchar(100) DEFAULT NULL,
                 card_id varchar(64) NOT NULL,
                 member_id bigint(20) unsigned DEFAULT NULL,
                 event_time datetime NOT NULL,
@@ -187,6 +191,13 @@ if (!function_exists('shed_attendance_handle_prox_card_request')) {
                     'ok'    => true,
                     'cards' => shed_attendance_get_card_cache_payload(),
                     'rota'  => shed_attendance_get_duty_rota_payload(current_time('Y-m-d')),
+                ];
+            }
+
+            if ($request->get_param('sync') === 'rota') {
+                return [
+                    'ok'   => true,
+                    'rota' => shed_attendance_get_duty_rota_payload(current_time('Y-m-d')),
                 ];
             }
 
@@ -330,7 +341,14 @@ if (!function_exists('shed_attendance_log_card_event')) {
         );
 
         if (!$event_id) {
-            return new WP_Error('shed_attendance_log_failed', 'Unable to save attendance event.', ['status' => 500]);
+            return new WP_Error(
+                'shed_attendance_log_failed',
+                'Unable to save attendance event.',
+                [
+                    'status'   => 500,
+                    'db_error' => defined('WP_DEBUG') && WP_DEBUG ? $wpdb->last_error : '',
+                ]
+            );
         }
 
         return [
@@ -720,6 +738,15 @@ if (!function_exists('shed_attendance_admin_menu')) {
             'dashicons-id',
             31
         );
+
+        add_submenu_page(
+            'shed-attendance',
+            'Shed Attendance Reports',
+            'Reports',
+            'manage_options',
+            'shed-attendance-reports',
+            'shed_attendance_render_reports_page'
+        );
     }
 }
 
@@ -902,6 +929,45 @@ if (!function_exists('shed_attendance_handle_export_events')) {
     }
 }
 
+if (!function_exists('shed_attendance_handle_export_duration_report')) {
+    function shed_attendance_handle_export_duration_report() {
+        if (!current_user_can('manage_options')) {
+            wp_die('You do not have permission to export attendance reports.');
+        }
+
+        check_admin_referer('shed_attendance_export_duration_report');
+
+        $period = isset($_POST['attendance_report_period']) ? sanitize_key(wp_unslash($_POST['attendance_report_period'])) : 'day';
+        $date = isset($_POST['attendance_report_date']) ? sanitize_text_field(wp_unslash($_POST['attendance_report_date'])) : current_time('Y-m-d');
+        $bounds = shed_attendance_report_period_bounds($period, $date);
+        $sessions = shed_attendance_get_attendance_sessions($bounds['start'], $bounds['end']);
+        $filename = 'shed-attendance-duration-' . sanitize_file_name($bounds['period'] . '-' . substr($bounds['start'], 0, 10)) . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $filename);
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['Period', 'Member', 'Card ID', 'Entry time', 'Exit time', 'Duration', 'Duration minutes', 'Still open', 'Includes deemed event']);
+
+        foreach ($sessions as $session) {
+            fputcsv($output, [
+                $bounds['label'],
+                $session['handle'] ?: $session['member_name'] ?: 'Unknown card',
+                $session['card_id'],
+                $session['entry_time'],
+                $session['exit_time'],
+                shed_attendance_format_duration($session['duration']),
+                round(intval($session['duration']) / MINUTE_IN_SECONDS, 2),
+                !empty($session['is_open']) ? 'Yes' : 'No',
+                !empty($session['has_deemed']) ? 'Yes' : 'No',
+            ]);
+        }
+
+        fclose($output);
+        exit;
+    }
+}
+
 if (!function_exists('shed_attendance_get_members')) {
     function shed_attendance_get_members() {
         global $wpdb;
@@ -936,6 +1002,233 @@ if (!function_exists('shed_attendance_get_event_rows')) {
                 max(1, intval($limit))
             )
         );
+    }
+}
+
+if (!function_exists('shed_attendance_get_current_attendees')) {
+    function shed_attendance_get_current_attendees($date = '') {
+        global $wpdb;
+
+        $date = shed_attendance_normalize_rota_date($date);
+        list($start, $end) = shed_attendance_day_bounds($date !== '' ? $date : current_time('Y-m-d'));
+        $events_table = shed_attendance_events_table();
+        $members_table = shed_attendance_members_table();
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT e.*, m.member_name, m.handle, m.is_pending, m.is_active
+                FROM {$events_table} e
+                LEFT JOIN {$members_table} m ON m.id = e.member_id OR (e.member_id IS NULL AND m.card_id = e.card_id)
+                WHERE e.event_time >= %s
+                    AND e.event_time < %s
+                    AND e.card_state = 1
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM {$events_table} later
+                        WHERE later.card_id = e.card_id
+                            AND later.event_time >= %s
+                            AND later.event_time < %s
+                            AND (
+                                later.event_time > e.event_time
+                                OR (later.event_time = e.event_time AND later.id > e.id)
+                            )
+                    )
+                ORDER BY COALESCE(NULLIF(m.handle, ''), NULLIF(m.member_name, ''), e.card_id) ASC",
+                $start,
+                $end,
+                $start,
+                $end
+            )
+        );
+    }
+}
+
+if (!function_exists('shed_attendance_datetime_to_timestamp')) {
+    function shed_attendance_datetime_to_timestamp($datetime) {
+        try {
+            return (new DateTimeImmutable((string) $datetime, wp_timezone()))->getTimestamp();
+        } catch (Exception $exception) {
+            return 0;
+        }
+    }
+}
+
+if (!function_exists('shed_attendance_format_duration')) {
+    function shed_attendance_format_duration($seconds) {
+        $seconds = max(0, intval($seconds));
+        $hours = intdiv($seconds, HOUR_IN_SECONDS);
+        $minutes = intdiv($seconds % HOUR_IN_SECONDS, MINUTE_IN_SECONDS);
+
+        return sprintf('%d:%02d', $hours, $minutes);
+    }
+}
+
+if (!function_exists('shed_attendance_report_period_bounds')) {
+    function shed_attendance_report_period_bounds($period = 'day', $date = '') {
+        $period = sanitize_key((string) $period);
+
+        if (!in_array($period, ['day', 'week', 'month'], true)) {
+            $period = 'day';
+        }
+
+        $date = shed_attendance_normalize_rota_date($date);
+
+        if ($date === '') {
+            $date = current_time('Y-m-d');
+        }
+
+        $selected = new DateTimeImmutable($date . ' 12:00:00', wp_timezone());
+
+        if ($period === 'week') {
+            $start_date = $selected->modify('monday this week')->format('Y-m-d');
+            $end_date = (new DateTimeImmutable($start_date . ' 00:00:00', wp_timezone()))->modify('+1 week')->format('Y-m-d');
+            $label = 'Week commencing ' . wp_date('d/m/Y', strtotime($start_date . ' 12:00:00'));
+        } elseif ($period === 'month') {
+            $start_date = $selected->modify('first day of this month')->format('Y-m-d');
+            $end_date = (new DateTimeImmutable($start_date . ' 00:00:00', wp_timezone()))->modify('+1 month')->format('Y-m-d');
+            $label = wp_date('F Y', strtotime($start_date . ' 12:00:00'));
+        } else {
+            $start_date = $selected->format('Y-m-d');
+            $end_date = (new DateTimeImmutable($start_date . ' 00:00:00', wp_timezone()))->modify('+1 day')->format('Y-m-d');
+            $label = wp_date('d/m/Y', strtotime($start_date . ' 12:00:00'));
+        }
+
+        return [
+            'period' => $period,
+            'date'   => $date,
+            'start'  => $start_date . ' 00:00:00',
+            'end'    => $end_date . ' 00:00:00',
+            'label'  => $label,
+        ];
+    }
+}
+
+if (!function_exists('shed_attendance_get_events_for_period')) {
+    function shed_attendance_get_events_for_period($start, $end) {
+        global $wpdb;
+
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                'SELECT e.*, m.member_name, m.handle
+                FROM ' . shed_attendance_events_table() . ' e
+                LEFT JOIN ' . shed_attendance_members_table() . ' m ON m.card_id = e.card_id
+                WHERE e.event_time >= %s AND e.event_time < %s
+                ORDER BY e.card_id ASC, e.event_time ASC, e.id ASC',
+                $start,
+                $end
+            )
+        );
+    }
+}
+
+if (!function_exists('shed_attendance_get_attendance_sessions')) {
+    function shed_attendance_get_attendance_sessions($start, $end) {
+        $events = shed_attendance_get_events_for_period($start, $end);
+        $open_events = [];
+        $sessions = [];
+
+        foreach ($events as $event) {
+            $card_id = shed_attendance_normalize_card_id($event->card_id);
+            $event_state = intval($event->card_state);
+
+            if ($event_state === 1) {
+                if (empty($open_events[$card_id])) {
+                    $open_events[$card_id] = $event;
+                }
+
+                continue;
+            }
+
+            if (empty($open_events[$card_id])) {
+                continue;
+            }
+
+            $entry = $open_events[$card_id];
+            unset($open_events[$card_id]);
+            $entry_time = shed_attendance_datetime_to_timestamp($entry->event_time);
+            $exit_time = shed_attendance_datetime_to_timestamp($event->event_time);
+
+            if ($entry_time <= 0 || $exit_time <= $entry_time) {
+                continue;
+            }
+
+            $sessions[] = [
+                'card_id'       => $card_id,
+                'member_name'   => $entry->member_name ?: $event->member_name,
+                'handle'        => $entry->handle ?: $event->handle,
+                'entry_time'    => $entry->event_time,
+                'exit_time'     => $event->event_time,
+                'duration'      => $exit_time - $entry_time,
+                'is_open'       => false,
+                'has_deemed'    => intval($entry->is_deemed) === 1 || intval($event->is_deemed) === 1,
+            ];
+        }
+
+        $now = current_time('mysql');
+        $now_ts = shed_attendance_datetime_to_timestamp($now);
+        $period_start_ts = shed_attendance_datetime_to_timestamp($start);
+        $period_end_ts = shed_attendance_datetime_to_timestamp($end);
+
+        if ($now_ts >= $period_start_ts && $now_ts < $period_end_ts) {
+            foreach ($open_events as $card_id => $entry) {
+                $entry_time = shed_attendance_datetime_to_timestamp($entry->event_time);
+
+                if ($entry_time <= 0 || $now_ts <= $entry_time) {
+                    continue;
+                }
+
+                $sessions[] = [
+                    'card_id'       => $card_id,
+                    'member_name'   => $entry->member_name,
+                    'handle'        => $entry->handle,
+                    'entry_time'    => $entry->event_time,
+                    'exit_time'     => $now,
+                    'duration'      => $now_ts - $entry_time,
+                    'is_open'       => true,
+                    'has_deemed'    => intval($entry->is_deemed) === 1,
+                ];
+            }
+        }
+
+        return $sessions;
+    }
+}
+
+if (!function_exists('shed_attendance_get_duration_totals')) {
+    function shed_attendance_get_duration_totals($sessions, $group_by_member = true) {
+        $totals = [];
+
+        foreach ($sessions as $session) {
+            $key = $group_by_member ? $session['card_id'] : '_all';
+
+            if (!isset($totals[$key])) {
+                $totals[$key] = [
+                    'member'       => $group_by_member ? ($session['handle'] ?: $session['member_name'] ?: 'Unknown card') : 'All members',
+                    'card_id'      => $group_by_member ? $session['card_id'] : '',
+                    'sessions'     => 0,
+                    'seconds'      => 0,
+                    'open_count'   => 0,
+                    'deemed_count' => 0,
+                ];
+            }
+
+            $totals[$key]['sessions']++;
+            $totals[$key]['seconds'] += intval($session['duration']);
+
+            if (!empty($session['is_open'])) {
+                $totals[$key]['open_count']++;
+            }
+
+            if (!empty($session['has_deemed'])) {
+                $totals[$key]['deemed_count']++;
+            }
+        }
+
+        usort($totals, function ($a, $b) {
+            return strcasecmp($a['member'], $b['member']);
+        });
+
+        return $totals;
     }
 }
 
@@ -1038,6 +1331,198 @@ if (!function_exists('shed_attendance_today_shortcode')) {
     }
 }
 
+if (!function_exists('shed_attendance_render_current_attendees_table')) {
+    function shed_attendance_render_current_attendees_table($rows) {
+        ob_start();
+        ?>
+        <div class="shed-attendance-now">
+            <p><strong>Members in attendance now: <?php echo esc_html((string) count($rows)); ?></strong></p>
+            <p>Report time: <?php echo esc_html(current_time('d/m/Y H:i:s')); ?></p>
+            <table class="shed-attendance-now-table">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Card ID</th>
+                        <th>Tap-in time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($rows)) : ?>
+                        <?php foreach ($rows as $row) : ?>
+                            <?php $member_label = $row->handle ?: $row->member_name ?: 'Unknown card'; ?>
+                            <tr>
+                                <td><?php echo esc_html($member_label); ?></td>
+                                <td><code><?php echo esc_html($row->card_id); ?></code></td>
+                                <td><?php echo esc_html($row->event_time); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr><td colspan="3">No members are currently shown as in attendance.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+}
+
+if (!function_exists('shed_attendance_render_duration_report')) {
+    function shed_attendance_render_duration_report($period = 'day', $date = '', $mode = 'member', $context = 'admin', $show_export = true) {
+        $bounds = shed_attendance_report_period_bounds($period, $date);
+        $mode = $mode === 'total' ? 'total' : 'member';
+        $sessions = shed_attendance_get_attendance_sessions($bounds['start'], $bounds['end']);
+        $totals = shed_attendance_get_duration_totals($sessions, $mode === 'member');
+        $selected_date = substr($bounds['date'], 0, 10);
+        $context = $context === 'frontend' ? 'frontend' : 'admin';
+        $show_export = $show_export && $context === 'admin';
+        $form_action = $context === 'admin' ? admin_url('admin.php') : remove_query_arg(['attendance_report_period', 'attendance_report_date', 'attendance_report_mode']);
+        $total_seconds = array_sum(array_map(function ($row) {
+            return intval($row['seconds']);
+        }, $totals));
+
+        ob_start();
+        ?>
+        <div class="shed-attendance-duration-report">
+            <form method="get" action="<?php echo esc_url($form_action); ?>">
+                <?php if ($context === 'admin') : ?>
+                    <input type="hidden" name="page" value="shed-attendance-reports">
+                <?php endif; ?>
+                <table class="<?php echo $context === 'admin' ? 'form-table' : 'shed-attendance-report-controls'; ?>" role="presentation">
+                    <tr>
+                        <th scope="row"><label for="attendance_report_period">Period</label></th>
+                        <td>
+                            <select name="attendance_report_period" id="attendance_report_period">
+                                <option value="day" <?php selected($bounds['period'], 'day'); ?>>Calendar day</option>
+                                <option value="week" <?php selected($bounds['period'], 'week'); ?>>Calendar week</option>
+                                <option value="month" <?php selected($bounds['period'], 'month'); ?>>Calendar month</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="attendance_report_date">Date</label></th>
+                        <td>
+                            <input name="attendance_report_date" id="attendance_report_date" type="date" value="<?php echo esc_attr($selected_date); ?>">
+                            <p class="description">For week and month reports, choose any date inside the required period.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">View</th>
+                        <td>
+                            <label><input name="attendance_report_mode" type="radio" value="member" <?php checked($mode, 'member'); ?>> List by member</label>
+                            <br>
+                            <label><input name="attendance_report_mode" type="radio" value="total" <?php checked($mode, 'total'); ?>> Show overall total only</label>
+                        </td>
+                    </tr>
+                </table>
+                <?php if ($context === 'admin') : ?>
+                    <?php submit_button('Run attendance report', 'secondary'); ?>
+                <?php else : ?>
+                    <p><button type="submit">Run attendance report</button></p>
+                <?php endif; ?>
+            </form>
+
+            <?php if ($show_export) : ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('shed_attendance_export_duration_report'); ?>
+                    <input type="hidden" name="action" value="shed_attendance_export_duration_report">
+                    <input type="hidden" name="attendance_report_period" value="<?php echo esc_attr($bounds['period']); ?>">
+                    <input type="hidden" name="attendance_report_date" value="<?php echo esc_attr($selected_date); ?>">
+                    <?php submit_button('Export duration CSV', 'secondary', 'submit', false); ?>
+                </form>
+            <?php endif; ?>
+
+            <p><strong><?php echo esc_html($bounds['label']); ?></strong></p>
+            <p>Total attendance: <?php echo esc_html(shed_attendance_format_duration($total_seconds)); ?> from <?php echo esc_html((string) count($sessions)); ?> completed or current attendance period<?php echo count($sessions) === 1 ? '' : 's'; ?>.</p>
+
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <?php if ($mode === 'member') : ?>
+                            <th>Member</th>
+                            <th>Card ID</th>
+                        <?php else : ?>
+                            <th>Scope</th>
+                        <?php endif; ?>
+                        <th>Attendance periods</th>
+                        <th>Total time</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($totals)) : ?>
+                        <?php foreach ($totals as $row) : ?>
+                            <?php
+                            $notes = [];
+
+                            if ($row['open_count'] > 0) {
+                                $notes[] = $row['open_count'] . ' still open';
+                            }
+
+                            if ($row['deemed_count'] > 0) {
+                                $notes[] = $row['deemed_count'] . ' deemed';
+                            }
+                            ?>
+                            <tr>
+                                <?php if ($mode === 'member') : ?>
+                                    <td><?php echo esc_html($row['member']); ?></td>
+                                    <td><code><?php echo esc_html($row['card_id']); ?></code></td>
+                                <?php else : ?>
+                                    <td><?php echo esc_html($row['member']); ?></td>
+                                <?php endif; ?>
+                                <td><?php echo esc_html((string) $row['sessions']); ?></td>
+                                <td><?php echo esc_html(shed_attendance_format_duration($row['seconds'])); ?></td>
+                                <td><?php echo esc_html(implode(', ', $notes)); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr><td colspan="<?php echo $mode === 'member' ? '5' : '4'; ?>">No attendance periods found for this selection.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+}
+
+if (!function_exists('shed_attendance_now_shortcode')) {
+    function shed_attendance_now_shortcode($atts = []) {
+        $atts = shortcode_atts(['public' => 'no'], $atts, 'shed_attendance_now');
+
+        if ($atts['public'] !== 'yes' && !current_user_can('read')) {
+            return '<p>You must be logged in to view current attendance.</p>';
+        }
+
+        return shed_attendance_render_current_attendees_table(shed_attendance_get_current_attendees());
+    }
+}
+
+if (!function_exists('shed_attendance_duration_report_shortcode')) {
+    function shed_attendance_duration_report_shortcode($atts = []) {
+        $atts = shortcode_atts(
+            [
+                'period' => 'day',
+                'date'   => current_time('Y-m-d'),
+                'mode'   => 'member',
+                'public' => 'no',
+            ],
+            $atts,
+            'shed_attendance_duration_report'
+        );
+
+        if ($atts['public'] !== 'yes' && !current_user_can('read')) {
+            return '<p>You must be logged in to view attendance reports.</p>';
+        }
+
+        $period = isset($_GET['attendance_report_period']) ? sanitize_key(wp_unslash($_GET['attendance_report_period'])) : $atts['period'];
+        $date = isset($_GET['attendance_report_date']) ? sanitize_text_field(wp_unslash($_GET['attendance_report_date'])) : $atts['date'];
+        $mode = isset($_GET['attendance_report_mode']) ? sanitize_key(wp_unslash($_GET['attendance_report_mode'])) : $atts['mode'];
+
+        return shed_attendance_render_duration_report($period, $date, $mode, 'frontend', false);
+    }
+}
+
 if (!function_exists('shed_duty_rota_shortcode')) {
     function shed_duty_rota_shortcode($atts = []) {
         $atts = shortcode_atts(['days' => 30], $atts, 'shed_duty_rota');
@@ -1122,11 +1607,8 @@ if (!function_exists('shed_attendance_events_shortcode')) {
 
 if (!function_exists('shed_attendance_render_admin_page')) {
     function shed_attendance_render_admin_page() {
-        $members = shed_attendance_get_members();
         $pending_members = shed_attendance_get_pending_members();
-        $events = shed_attendance_get_event_rows(100);
         $duty_managers = shed_attendance_get_qualified_duty_managers();
-        $duty_rota_rows = shed_attendance_get_duty_rota_rows(120);
         $today_rota = shed_attendance_get_duty_rota_payload(current_time('Y-m-d'));
         $endpoint = rest_url('shed/v1/prox-card');
         $api_key = (string) get_option('shed_attendance_api_key', '');
@@ -1209,34 +1691,6 @@ if (!function_exists('shed_attendance_render_admin_page')) {
                 </tbody>
             </table>
 
-            <h2>Member cards</h2>
-            <table class="widefat striped">
-                <thead>
-                    <tr>
-                        <th>Card ID</th>
-                        <th>Member</th>
-                        <th>Handle</th>
-                        <th>Status</th>
-                        <th>Last seen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($members)) : ?>
-                        <?php foreach ($members as $member) : ?>
-                            <tr>
-                                <td><code><?php echo esc_html($member->card_id); ?></code></td>
-                                <td><?php echo esc_html($member->member_name); ?></td>
-                                <td><?php echo esc_html($member->handle); ?></td>
-                                <td><?php echo intval($member->is_pending) === 1 ? 'Pending' : (intval($member->is_active) === 1 ? 'Active' : 'Inactive'); ?></td>
-                                <td><?php echo esc_html($member->last_seen_at); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else : ?>
-                        <tr><td colspan="5">No member cards have been added yet.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-
             <h2>Qualified duty managers</h2>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <?php wp_nonce_field('shed_attendance_save_duty_settings'); ?>
@@ -1290,6 +1744,57 @@ if (!function_exists('shed_attendance_render_admin_page')) {
                 </table>
                 <?php submit_button('Save duty rota day'); ?>
             </form>
+        </div>
+        <?php
+    }
+}
+
+if (!function_exists('shed_attendance_render_reports_page')) {
+    function shed_attendance_render_reports_page() {
+        $members = shed_attendance_get_members();
+        $current_attendees = shed_attendance_get_current_attendees();
+        $events = shed_attendance_get_event_rows(100);
+        $duty_rota_rows = shed_attendance_get_duty_rota_rows(120);
+        $attendance_report_period = isset($_GET['attendance_report_period']) ? sanitize_key(wp_unslash($_GET['attendance_report_period'])) : 'day';
+        $attendance_report_date = isset($_GET['attendance_report_date']) ? sanitize_text_field(wp_unslash($_GET['attendance_report_date'])) : current_time('Y-m-d');
+        $attendance_report_mode = isset($_GET['attendance_report_mode']) ? sanitize_key(wp_unslash($_GET['attendance_report_mode'])) : 'member';
+        ?>
+        <div class="wrap">
+            <h1>Shed Attendance Reports</h1>
+
+            <h2>Emergency attendance now</h2>
+            <?php echo shed_attendance_render_current_attendees_table($current_attendees); ?>
+
+            <h2>Attendance duration report</h2>
+            <?php echo shed_attendance_render_duration_report($attendance_report_period, $attendance_report_date, $attendance_report_mode); ?>
+
+            <h2>Member cards</h2>
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th>Card ID</th>
+                        <th>Member</th>
+                        <th>Handle</th>
+                        <th>Status</th>
+                        <th>Last seen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($members)) : ?>
+                        <?php foreach ($members as $member) : ?>
+                            <tr>
+                                <td><code><?php echo esc_html($member->card_id); ?></code></td>
+                                <td><?php echo esc_html($member->member_name); ?></td>
+                                <td><?php echo esc_html($member->handle); ?></td>
+                                <td><?php echo intval($member->is_pending) === 1 ? 'Pending' : (intval($member->is_active) === 1 ? 'Active' : 'Inactive'); ?></td>
+                                <td><?php echo esc_html($member->last_seen_at); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <tr><td colspan="5">No member cards have been added yet.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
 
             <h2>Duty rota</h2>
             <table class="widefat striped">
