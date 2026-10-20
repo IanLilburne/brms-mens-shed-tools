@@ -27,6 +27,7 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-commitments-report.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/admin-cleanup.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/attendance-report-fix.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/attendance.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/attendance-kiosk.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/ai/class-ai-rewrite-service.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/images/class-image-service.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/posts/class-post-service.php';
