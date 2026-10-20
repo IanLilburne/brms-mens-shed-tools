@@ -70,7 +70,7 @@ function shed_kiosk_status(WP_REST_Request $request) {
         "SELECT e.id, e.card_state, e.event_time, e.source, COALESCE(NULLIF(m.handle, ''), m.member_name, 'Unknown card') AS name
         FROM {$events_table} e LEFT JOIN {$members_table} m ON m.card_id = e.card_id
         WHERE e.id > %d AND e.created_at >= %s AND e.is_deemed = 0 ORDER BY e.id ASC LIMIT 15",
-        $after, gmdate('Y-m-d H:i:s', time() - 240)
+        $after, wp_date('Y-m-d H:i:s', time() - 240)
     ));
     $events = [];
     foreach ($recent as $event) {
