@@ -3,7 +3,7 @@
  * Plugin Name: Men's Shed Tools
  * Plugin URI: https://brms.org.uk/
  * Description: Custom tools for Brundall Men's Shed workflow, dashboards, and forms.
- * Version: 0.2.3
+ * Version: 0.2.4
  * Author: Brundall Men's Shed
  * License: GPL2+
  */
