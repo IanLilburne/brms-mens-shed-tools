@@ -110,8 +110,6 @@
 
   async function check(member, action) {
     if (busy) return;
-    const verb = action === 'in' ? 'IN' : 'OUT';
-    if (!window.confirm('Sign ' + member.name + ' ' + verb + '?')) return;
     busy = true;
     const token = (window.crypto && window.crypto.randomUUID)
       ? window.crypto.randomUUID()
