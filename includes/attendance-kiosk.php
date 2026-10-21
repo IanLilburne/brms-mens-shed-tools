@@ -41,8 +41,8 @@ function shed_kiosk_shortcode() {
     if (!shed_kiosk_allowed()) {
         return '<p>Sign in with the Shed kiosk account to use attendance check-in.</p>';
     }
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.4');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.4', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.5');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.5', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
@@ -50,6 +50,7 @@ function shed_kiosk_shortcode() {
     return '<main id="shed-kiosk" class="shed-kiosk" aria-label="Shed attendance kiosk">
         <header class="shed-kiosk-header"><div><h1>Brundall Mens Shed</h1><p>Welcome to our Shed</p></div><div class="shed-kiosk-clock" id="shed-kiosk-clock"></div></header>
         <div class="shed-kiosk-news" id="shed-kiosk-news" aria-label="Latest announcements"><span>Loading announcements…</span></div>
+        <div class="shed-kiosk-news shed-kiosk-news-urgent" id="shed-kiosk-news-urgent" aria-label="Announcements ending soon" hidden></div>
         <section class="shed-kiosk-main"><h2>Sign in or out</h2><p>Tap your RFID card or find your name below.</p>
           <div class="shed-kiosk-feedback" id="shed-kiosk-feedback" role="status" aria-live="polite">Ready for your card or name</div>
           <label for="shed-kiosk-search">Find your name</label>
@@ -102,6 +103,7 @@ function shed_kiosk_status(WP_REST_Request $request) {
             'direction' => (int) $event->card_state === 1 ? 'in' : 'out',
             'source' => (string) $event->source,
             'time' => (string) $event->event_time,
+            'returning' => (int) $event->card_state === 1 ? shed_kiosk_long_absence($event->card_id, $event->event_time, (int) $event->id) : false,
         ];
     }
     $rota = shed_attendance_get_duty_rota_payload($today);
@@ -112,12 +114,26 @@ function shed_kiosk_status(WP_REST_Request $request) {
     if (!empty($rota['dutyManager'])) {
         array_unshift($news, ['message' => 'Today\'s duty manager is ' . $rota['dutyManager']]);
     }
+    $regular_news = [];
+    $urgent_news = [];
+    $today_date = new DateTimeImmutable($today, wp_timezone());
+    foreach ($news as $item) {
+        $end = isset($item['end']) ? (string) $item['end'] : '';
+        $ending_soon = false;
+        if ($end !== '' && preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $end)) {
+            $days_left = (int) $today_date->diff(new DateTimeImmutable($end, wp_timezone()))->format('%r%a');
+            $ending_soon = $days_left >= 0 && $days_left < 8;
+        }
+        if ($ending_soon) { $urgent_news[] = $item; }
+        else { $regular_news[] = $item; }
+    }
     return rest_ensure_response([
         'present' => count($present),
         'visits' => $visits,
         'latest_id' => (int) $wpdb->get_var("SELECT COALESCE(MAX(id), 0) FROM {$events_table}"),
         'events' => $events,
-        'news' => $news,
+        'news' => $regular_news,
+        'urgent_news' => $urgent_news,
     ]);
 }
 
@@ -177,9 +193,10 @@ function shed_kiosk_check(WP_REST_Request $request) {
             return new WP_Error('too_fast', 'Please wait a few seconds before changing status again.', ['status' => 409]);
         }
         $state = $action === 'in' ? 1 : 0;
+        $returning = $state === 1 ? shed_kiosk_long_absence($member->card_id, current_time('mysql')) : false;
         $event_id = shed_attendance_insert_event($member->card_id, $member, current_time('mysql'), $state, 'touchscreen', false, '', [], 'kiosk-' . $token);
         if (!$event_id) { return new WP_Error('save_failed', 'Could not save attendance.', ['status' => 500]); }
-        return ['ok' => true, 'id' => $event_id, 'name' => shed_attendance_member_handle($member), 'direction' => $action];
+        return ['ok' => true, 'id' => $event_id, 'name' => shed_attendance_member_handle($member), 'direction' => $action, 'returning' => $returning];
     } finally {
         $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $lock_name));
     }
@@ -231,4 +248,21 @@ function shed_kiosk_valid_date($raw) {
     $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value, wp_timezone());
     if (!$date || $date->format('Y-m-d') !== $value) { wp_die('Invalid announcement date.'); }
     return $value;
+}
+
+/** True when the preceding recorded entry was more than 30 calendar days before this one. */
+function shed_kiosk_long_absence($card_id, $current_time, $exclude_event_id = 0) {
+    global $wpdb;
+    $table = shed_attendance_events_table();
+    $previous = $wpdb->get_var($wpdb->prepare(
+        "SELECT event_time FROM {$table}
+         WHERE card_id = %s AND card_state = 1 AND is_deemed = 0
+           AND event_time < %s AND id <> %d
+         ORDER BY event_time DESC, id DESC LIMIT 1",
+         shed_attendance_normalize_card_id($card_id), $current_time, $exclude_event_id
+    ));
+    if (!$previous) { return false; }
+    $prior_day = new DateTimeImmutable(substr((string) $previous, 0, 10), wp_timezone());
+    $today_day = new DateTimeImmutable(substr((string) $current_time, 0, 10), wp_timezone());
+    return (int) $prior_day->diff($today_day)->format('%r%a') > 30;
 }
