@@ -18,3 +18,8 @@ body:has(#shed-kiosk) .inside-site-info {max-width:none!important;width:100%!imp
 body:has(#shed-kiosk){margin:0!important}
 body:has(#shed-kiosk) .grid-container{max-width:none!important;width:100%!important}
 body:has(#shed-kiosk) .shed-kiosk{max-width:none!important;width:100%!important;min-height:100vh;margin:0!important;border-radius:0;box-shadow:none}
+
+body:has(#shed-kiosk) #wpadminbar{display:none!important}
+body:has(#shed-kiosk).admin-bar{margin-top:0!important}
+html:has(#shed-kiosk){margin-top:0!important}
+@media screen and (max-width:782px){html:has(#shed-kiosk){margin-top:0!important}}
