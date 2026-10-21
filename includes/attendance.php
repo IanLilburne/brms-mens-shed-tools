@@ -1768,6 +1768,9 @@ if (!function_exists('shed_attendance_render_reports_page')) {
             <h2>Attendance duration report</h2>
             <?php echo shed_attendance_render_duration_report($attendance_report_period, $attendance_report_date, $attendance_report_mode); ?>
 
+            <h2>Members absent for over 30 days</h2>
+            <?php echo shed_attendance_absent_members_report(); ?>
+
             <h2>Member cards</h2>
             <table class="widefat striped">
                 <thead>
