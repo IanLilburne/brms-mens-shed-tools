@@ -14,6 +14,7 @@
   let busy = false;
   let lastShown = 0;
   let newsSignature = '';
+  let urgentSignature = '';
 
   async function api(path, options) {
     const response = await fetch(shedKioskConfig.base + path, {
@@ -38,11 +39,18 @@
     }, 5000);
   }
 
-  function renderNews(items) {
+  function renderNews(items, id, urgent) {
     const key = JSON.stringify(items);
-    if (key === newsSignature) return;
-    newsSignature = key;
-    const news = $('shed-kiosk-news');
+    if (urgent) {
+      if (key === urgentSignature) return;
+      urgentSignature = key;
+    } else {
+      if (key === newsSignature) return;
+      newsSignature = key;
+    }
+    const news = $(id);
+    news.hidden = urgent && !items.length;
+    if (news.hidden) return;
     news.textContent = '';
     const span = document.createElement('span');
     span.className = 'shed-kiosk-news-text';
@@ -59,12 +67,13 @@
       $('shed-kiosk-connection').hidden = true;
       $('shed-kiosk-present').textContent = data.present;
       $('shed-kiosk-visits').textContent = data.visits;
-      renderNews(data.news || []);
+      renderNews(data.news || [], 'shed-kiosk-news', false);
+      renderNews(data.urgent_news || [], 'shed-kiosk-news-urgent', true);
       // First request establishes a baseline, so old events aren't presented as fresh swipes.
       if (cursor !== null) {
         (data.events || []).forEach(event => {
           if (event.source !== 'touchscreen' && event.id > lastShown) {
-            show((event.direction === 'in' ? 'Welcome, ' : 'Goodbye, ') + event.name + '!', event.direction);
+            show((event.direction === 'in' ? (event.returning ? 'Good to see you again, ' : 'Welcome, ') : 'Goodbye, ') + event.name + '!', event.direction);
           }
           lastShown = Math.max(lastShown, event.id);
         });
@@ -119,7 +128,7 @@
         method: 'POST',
         body: JSON.stringify({ member_id: member.id, action: action, token: token })
       });
-      show((action === 'in' ? 'Welcome, ' : 'Goodbye, ') + data.name + '!', action);
+      show((action === 'in' ? (data.returning ? 'Good to see you again, ' : 'Welcome, ') : 'Goodbye, ') + data.name + '!', action);
       input.value = '';
       ++searching;
       clearResults();
