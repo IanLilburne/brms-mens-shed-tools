@@ -16,18 +16,33 @@ function shed_kiosk_hide_admin_bar($show) {
 }
 add_action('rest_api_init', 'shed_kiosk_register_routes');
 add_action('admin_menu', 'shed_kiosk_admin_menu');
+add_action('init', 'shed_kiosk_register_role');
 add_action('admin_post_shed_kiosk_save_news', 'shed_kiosk_save_news');
 
+function shed_kiosk_register_role() {
+    $role = get_role('shed_kiosk');
+    if (!$role) {
+        add_role('shed_kiosk', 'Shed Kiosk', ['read' => true, 'shed_use_kiosk' => true, 'shed_edit_kiosk_news' => true]);
+    } else {
+        $role->add_cap('shed_use_kiosk');
+        $role->add_cap('shed_edit_kiosk_news');
+    }
+    $admin = get_role('administrator');
+    if ($admin) {
+        $admin->add_cap('shed_use_kiosk');
+        $admin->add_cap('shed_edit_kiosk_news');
+    }
+}
 function shed_kiosk_allowed() {
-    return is_user_logged_in() && current_user_can('edit_posts');
+    return is_user_logged_in() && (current_user_can('shed_use_kiosk') || current_user_can('edit_posts'));
 }
 
 function shed_kiosk_shortcode() {
     if (!shed_kiosk_allowed()) {
         return '<p>Sign in with the Shed kiosk account to use attendance check-in.</p>';
     }
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.3');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.3', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.4');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.4', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
@@ -171,10 +186,10 @@ function shed_kiosk_check(WP_REST_Request $request) {
 }
 
 function shed_kiosk_admin_menu() {
-    add_submenu_page('shed-attendance', 'Kiosk announcements', 'Kiosk announcements', 'manage_options', 'shed-kiosk-news', 'shed_kiosk_news_page');
+    add_menu_page('Kiosk announcements', 'Kiosk announcements', 'shed_edit_kiosk_news', 'shed-kiosk-news', 'shed_kiosk_news_page', 'dashicons-megaphone', 32);
 }
 function shed_kiosk_news_page() {
-    if (!current_user_can('manage_options')) { return; }
+    if (!current_user_can('shed_edit_kiosk_news')) { return; }
     $items = (array) get_option('shed_kiosk_news', []);
     echo '<div class="wrap"><h1>Kiosk announcements</h1><p>Enter a message and optional start/end dates. Blank dates mean no restriction. Both dates are inclusive.</p><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
     echo '<input type="hidden" name="action" value="shed_kiosk_save_news">';
@@ -191,7 +206,7 @@ function shed_kiosk_news_page() {
     echo '</form></div>';
 }
 function shed_kiosk_save_news() {
-    if (!current_user_can('manage_options')) { wp_die('Not authorised.'); }
+    if (!current_user_can('shed_edit_kiosk_news')) { wp_die('Not authorised.'); }
     check_admin_referer('shed_kiosk_news');
     $raw = isset($_POST['news']) && is_array($_POST['news']) ? wp_unslash($_POST['news']) : [];
     $items = [];
