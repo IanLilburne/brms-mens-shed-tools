@@ -19,14 +19,14 @@ function shed_kiosk_shortcode() {
     if (!shed_kiosk_allowed()) {
         return '<p>Sign in with the Shed kiosk account to use attendance check-in.</p>';
     }
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.1');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.1', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.2');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.2', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
     ]);
     return '<main id="shed-kiosk" class="shed-kiosk" aria-label="Shed attendance kiosk">
-        <header class="shed-kiosk-header"><div><h1>Brundall Men\'s Shed</h1><p>Welcome to the Shed</p></div><div class="shed-kiosk-clock" id="shed-kiosk-clock"></div></header>
+        <header class="shed-kiosk-header"><div><h1>Brundall Mens Shed</h1><p>Welcome to our Shed</p></div><div class="shed-kiosk-clock" id="shed-kiosk-clock"></div></header>
         <div class="shed-kiosk-news" id="shed-kiosk-news" aria-label="Latest announcements"><span>Loading announcements…</span></div>
         <section class="shed-kiosk-main"><h2>Sign in or out</h2><p>Tap your RFID card or find your name below.</p>
           <div class="shed-kiosk-feedback" id="shed-kiosk-feedback" role="status" aria-live="polite">Ready for your card or name</div>
@@ -169,25 +169,44 @@ function shed_kiosk_admin_menu() {
 function shed_kiosk_news_page() {
     if (!current_user_can('manage_options')) { return; }
     $items = (array) get_option('shed_kiosk_news', []);
-    echo '<div class="wrap"><h1>Kiosk announcements</h1><p>One announcement per line. Optional date ranges can be added in a later release.</p><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+    echo '<div class="wrap"><h1>Kiosk announcements</h1><p>Enter a message and optional start/end dates. Blank dates mean no restriction. Both dates are inclusive.</p><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
     echo '<input type="hidden" name="action" value="shed_kiosk_save_news">';
     wp_nonce_field('shed_kiosk_news');
-    $lines = implode("\n", array_map(function ($item) { return isset($item['message']) ? $item['message'] : ''; }, $items));
-    echo '<textarea name="messages" rows="12" cols="90">' . esc_textarea($lines) . '</textarea>';
+    echo '<table class="widefat striped"><thead><tr><th>Announcement</th><th>Show from</th><th>Show until</th></tr></thead><tbody>';
+    for ($i = 0; $i < max(10, count($items) + 2); $i++) {
+        $item = isset($items[$i]) && is_array($items[$i]) ? $items[$i] : [];
+        echo '<tr><td><input type="text" style="width:100%" maxlength="250" name="news[' . (int) $i . '][message]" value="' . esc_attr($item['message'] ?? '') . '" /></td>';
+        echo '<td><input type="date" name="news[' . (int) $i . '][start]" value="' . esc_attr($item['start'] ?? '') . '" /></td>';
+        echo '<td><input type="date" name="news[' . (int) $i . '][end]" value="' . esc_attr($item['end'] ?? '') . '" /></td></tr>';
+    }
+    echo '</tbody></table><p>To add more than ten messages, save your entries and additional blank rows will appear.</p>';
     submit_button('Save announcements');
     echo '</form></div>';
 }
 function shed_kiosk_save_news() {
     if (!current_user_can('manage_options')) { wp_die('Not authorised.'); }
     check_admin_referer('shed_kiosk_news');
-    $raw = isset($_POST['messages']) ? (string) wp_unslash($_POST['messages']) : '';
+    $raw = isset($_POST['news']) && is_array($_POST['news']) ? wp_unslash($_POST['news']) : [];
     $items = [];
-    foreach (preg_split('/\r\n|\r|\n/', $raw) as $line) {
-        $message = sanitize_text_field($line);
-        if ($message !== '') { $items[] = ['message' => mb_substr($message, 0, 250)]; }
+    foreach ($raw as $entry) {
+        if (!is_array($entry)) { continue; }
+        $message = mb_substr(sanitize_text_field((string) ($entry['message'] ?? '')), 0, 250);
+        if ($message === '') { continue; }
+        $start = shed_kiosk_valid_date($entry['start'] ?? '');
+        $end = shed_kiosk_valid_date($entry['end'] ?? '');
+        if ($start && $end && $start > $end) { wp_die('An announcement end date cannot be earlier than its start date. Use Back to correct it.'); }
+        $items[] = ['message' => $message, 'start' => $start, 'end' => $end];
         if (count($items) >= 20) { break; }
     }
     update_option('shed_kiosk_news', $items);
     wp_safe_redirect(admin_url('admin.php?page=shed-kiosk-news&saved=1'));
     exit;
+}
+
+function shed_kiosk_valid_date($raw) {
+    $value = sanitize_text_field((string) $raw);
+    if ($value === '') { return ''; }
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value, wp_timezone());
+    if (!$date || $date->format('Y-m-d') !== $value) { wp_die('Invalid announcement date.'); }
+    return $value;
 }
