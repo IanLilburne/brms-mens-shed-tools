@@ -760,48 +760,59 @@ if (!function_exists('shed_attendance_handle_save_member')) {
 
         global $wpdb;
 
+        $edit_member_id = isset($_POST['member_id']) ? absint($_POST['member_id']) : 0;
         $card_id = isset($_POST['card_id']) ? shed_attendance_normalize_card_id(wp_unslash($_POST['card_id'])) : '';
         $member_name = isset($_POST['member_name']) ? sanitize_text_field(wp_unslash($_POST['member_name'])) : '';
         $handle = isset($_POST['handle']) ? sanitize_text_field(wp_unslash($_POST['handle'])) : '';
         $is_active = isset($_POST['is_active']) ? 1 : 0;
-        $is_pending = ($member_name === 'Unknown member' || $handle === '') ? 1 : 0;
+        $is_pending = ($member_name === 'Unknown member') ? 1 : 0;
         $now = current_time('mysql');
 
-        if ($card_id === '' || $member_name === '') {
-            wp_safe_redirect(add_query_arg('shed_attendance_error', 'missing_member_fields', shed_attendance_admin_url()));
-            exit;
+        if ($member_name === '') {
+            wp_die('Member name is required.');
         }
-
-        $existing = shed_attendance_get_member_by_card($card_id);
-
+        $members_table = shed_attendance_members_table();
+        $events_table = shed_attendance_events_table();
+        $existing = $edit_member_id ? $wpdb->get_row($wpdb->prepare("SELECT * FROM {$members_table} WHERE id = %d", $edit_member_id)) : null;
+        if ($edit_member_id && !$existing) { wp_die('Member not found.'); }
+        if ($card_id === '' && !$existing) {
+            do {
+                $card_id = 'FFFFEEEE' . strtoupper(bin2hex(random_bytes(16)));
+            } while (shed_attendance_get_member_by_card($card_id));
+        } elseif ($card_id === '' && $existing) {
+            $card_id = $existing->card_id;
+        }
+        $assigned = shed_attendance_get_member_by_card($card_id);
+        if ($assigned && (!$existing || (int) $assigned->id !== (int) $existing->id)) {
+            // Preserve existing update-by-card workflow for legacy entries,
+            // but prohibit assigning a real card to two different members.
+            if (!$existing && strpos($card_id, 'FFFFEEEE') !== 0) {
+                $existing = $assigned;
+            } else {
+                wp_die('Card already assigned to another member.');
+            }
+        }
         if ($existing) {
-            $wpdb->update(
-                shed_attendance_members_table(),
-                [
-                    'member_name' => $member_name,
-                    'handle'      => $handle,
-                    'is_active'   => $is_active,
-                    'is_pending'  => $is_pending,
-                    'updated_at'  => $now,
-                ],
-                ['id' => intval($existing->id)],
-                ['%s', '%s', '%d', '%d', '%s'],
-                ['%d']
-            );
+            $old_card = $existing->card_id;
+            $wpdb->query('START TRANSACTION');
+            $saved = $wpdb->update($members_table,
+                ['card_id' => $card_id, 'member_name' => $member_name, 'handle' => $handle,
+                 'is_active' => $is_active, 'is_pending' => $is_pending, 'updated_at' => $now],
+                ['id' => (int) $existing->id], ['%s','%s','%s','%d','%d','%s'], ['%d']);
+            $moved = $old_card === $card_id ? 0 :
+                $wpdb->update($events_table, ['card_id' => $card_id], ['card_id' => $old_card], ['%s'], ['%s']);
+            if ($saved === false || $moved === false) {
+                $wpdb->query('ROLLBACK');
+                wp_die('Could not update member without risking their attendance history.');
+            }
+            $wpdb->query('COMMIT');
         } else {
-            $wpdb->insert(
-                shed_attendance_members_table(),
-                [
-                    'card_id'     => $card_id,
-                    'member_name' => $member_name,
-                    'handle'      => $handle,
-                    'is_active'   => $is_active,
-                    'is_pending'  => $is_pending,
-                    'created_at'  => $now,
-                    'updated_at'  => $now,
-                ],
-                ['%s', '%s', '%s', '%d', '%d', '%s', '%s']
-            );
+            $saved = $wpdb->insert($members_table,
+                ['card_id' => $card_id, 'member_name' => $member_name, 'handle' => $handle,
+                 'is_active' => $is_active, 'is_pending' => $is_pending,
+                 'created_at' => $now, 'updated_at' => $now],
+                ['%s','%s','%s','%d','%d','%s','%s','%s']);
+            if (!$saved) { wp_die('Unable to save member.'); }
         }
 
         if (isset($_POST['api_key'])) {
@@ -1608,6 +1619,8 @@ if (!function_exists('shed_attendance_events_shortcode')) {
 if (!function_exists('shed_attendance_render_admin_page')) {
     function shed_attendance_render_admin_page() {
         $pending_members = shed_attendance_get_pending_members();
+        $edit_id = isset($_GET['member_id']) ? absint($_GET['member_id']) : 0;
+        $edit_member = $edit_id ? $GLOBALS['wpdb']->get_row($GLOBALS['wpdb']->prepare('SELECT * FROM ' . shed_attendance_members_table() . ' WHERE id = %d', $edit_id)) : null;
         $duty_managers = shed_attendance_get_qualified_duty_managers();
         $today_rota = shed_attendance_get_duty_rota_payload(current_time('Y-m-d'));
         $endpoint = rest_url('shed/v1/prox-card');
@@ -1633,26 +1646,27 @@ if (!function_exists('shed_attendance_render_admin_page')) {
                 <p>Last daily close-out: <?php echo esc_html($last_closeout['run_at']); ?> for <?php echo esc_html($last_closeout['date'] ?? ''); ?>.</p>
             <?php endif; ?>
 
-            <h2>Add or update member card</h2>
+            <h2>Add or update member</h2>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <?php wp_nonce_field('shed_attendance_save_member'); ?>
                 <input type="hidden" name="action" value="shed_attendance_save_member">
+                <input type="hidden" name="member_id" value="<?php echo $edit_member ? esc_attr($edit_member->id) : 0; ?>">
                 <table class="form-table" role="presentation">
                     <tr>
                         <th scope="row"><label for="card_id">Card ID</label></th>
-                        <td><input name="card_id" id="card_id" type="text" class="regular-text" required></td>
+                        <td><input name="card_id" id="card_id" type="text" class="regular-text" value="<?php echo esc_attr($edit_member && strpos($edit_member->card_id, 'FFFFEEEE') !== 0 ? $edit_member->card_id : ''); ?>"><p class="description">Optional. Leave blank for touchscreen-only attendance. Assign an RFID card by editing this member later.</p></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="member_name">Member name</label></th>
-                        <td><input name="member_name" id="member_name" type="text" class="regular-text" required></td>
+                        <td><input name="member_name" id="member_name" type="text" class="regular-text" value="<?php echo esc_attr($edit_member ? $edit_member->member_name : ''); ?>" required></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="handle">Display handle</label></th>
-                        <td><input name="handle" id="handle" type="text" class="regular-text"></td>
+                        <td><input name="handle" id="handle" type="text" class="regular-text" value="<?php echo esc_attr($edit_member ? $edit_member->handle : ''); ?>"></td>
                     </tr>
                     <tr>
                         <th scope="row">Status</th>
-                        <td><label><input name="is_active" type="checkbox" value="1" checked> Active card</label></td>
+                        <td><label><input name="is_active" type="checkbox" value="1" <?php checked(!$edit_member || (int) $edit_member->is_active === 1); ?>> Active member</label></td>
                     </tr>
                     <tr>
                         <th scope="row"><label for="api_key">Optional ESP32 API key</label></th>
@@ -1662,7 +1676,7 @@ if (!function_exists('shed_attendance_render_admin_page')) {
                         </td>
                     </tr>
                 </table>
-                <?php submit_button('Save member card'); ?>
+                <?php submit_button('Save member'); ?>
             </form>
 
             <h2>Pending card assignments</h2>
