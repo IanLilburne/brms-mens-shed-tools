@@ -1,0 +1,33 @@
+.shed-kiosk{box-sizing:border-box;max-width:1180px;min-height:85vh;margin:0 auto;background:#f5f7f5;color:#18352c;font-family:system-ui,-apple-system,sans-serif;border-radius:14px;overflow:hidden;box-shadow:0 5px 30px #0002}.shed-kiosk *{box-sizing:border-box}.shed-kiosk-header{background:#173f32;color:white;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;gap:16px}.shed-kiosk h1{color:white;font-size:clamp(24px,3.5vw,38px);margin:0;line-height:1.15}.shed-kiosk-header p{color:#d8ebe0;margin:6px 0 0}.shed-kiosk-clock{font-size:clamp(16px,2vw,24px);font-weight:700;white-space:nowrap}.shed-kiosk-news{position:relative;overflow:hidden;background:#326d55;color:white;height:49px;display:flex;align-items:center;white-space:nowrap}.shed-kiosk-news-text{padding-left:100%;display:inline-block;animation:shed-kiosk-ticker 25s linear infinite;font-size:19px}@keyframes shed-kiosk-ticker{to{transform:translateX(-100%)}}.shed-kiosk-main{max-width:780px;margin:auto;padding:20px 26px 34px;text-align:center}.shed-kiosk-main h2{font-size:clamp(29px,4vw,44px);margin:6px 0 6px}.shed-kiosk-main>p{margin:0 0 15px}.shed-kiosk-feedback{font-size:clamp(22px,3.4vw,36px);font-weight:700;background:#e5ebeb;border-radius:12px;padding:18px;margin:20px 0;min-height:90px;display:flex;align-items:center;justify-content:center}.shed-kiosk-feedback.in{background:#d9f4e0;color:#145a28}.shed-kiosk-feedback.out{background:#d8eafa;color:#17456c}.shed-kiosk-feedback.error{background:#ffe4df;color:#9c261c}.shed-kiosk-main label{display:block;text-align:left;font-size:21px;font-weight:650;margin:10px 0 5px}.shed-kiosk input[type=search]{width:100%;padding:15px 17px;font-size:25px;min-height:62px;background:white;border:2px solid #8ca49a;border-radius:9px;color:#18352c}.shed-kiosk-results{display:grid;gap:8px;margin-top:12px;text-align:left}.shed-kiosk-member{display:flex;justify-content:space-between;align-items:center;gap:15px;width:100%;padding:14px 17px;min-height:64px;font-size:clamp(20px,2.5vw,26px);background:#fff;border:1px solid #cbd8d0;border-radius:10px;color:#18352c;cursor:pointer;text-align:left}.shed-kiosk-member:focus-visible,.shed-kiosk-member:hover{outline:3px solid #25865a}.shed-kiosk-status{color:#fff;background:#246b4b;padding:9px 15px;border-radius:9px;font-size:19px;white-space:nowrap}.shed-kiosk-footer{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:15px 24px 25px}.shed-kiosk-footer>div{border:1px solid #d3dfd6;background:white;border-radius:12px;padding:15px;display:flex;flex-direction:column;align-items:center}.shed-kiosk-footer strong{font-size:clamp(34px,5vw,54px)}.shed-kiosk-footer span{font-size:16px}.shed-kiosk-connection{position:sticky;bottom:0;text-align:center;background:#a52a20;color:white;font-size:20px;padding:13px}.shed-kiosk-connection[hidden]{display:none}@media(max-width:600px){.shed-kiosk-header{padding:16px}.shed-kiosk-main{padding:15px}.shed-kiosk-footer{padding:12px}.shed-kiosk-member{font-size:19px}}@media(prefers-reduced-motion:reduce){.shed-kiosk-news-text{animation:none;padding-left:10px;white-space:normal;font-size:16px}}
+/* Full-browser kiosk presentation: specifically scope layout resets to the kiosk page. */
+body:has(#shed-kiosk) .site-header,
+body:has(#shed-kiosk) .main-navigation,
+body:has(#shed-kiosk) .site-footer,
+body:has(#shed-kiosk) .entry-header,
+body:has(#shed-kiosk) .sidebar,
+body:has(#shed-kiosk) #secondary {display:none!important}
+body:has(#shed-kiosk) #page,
+body:has(#shed-kiosk) #content,
+body:has(#shed-kiosk) #primary,
+body:has(#shed-kiosk) .site-content,
+body:has(#shed-kiosk) .content-area,
+body:has(#shed-kiosk) .inside-article,
+body:has(#shed-kiosk) .entry-content,
+body:has(#shed-kiosk) .site-main,
+body:has(#shed-kiosk) .inside-site-info {max-width:none!important;width:100%!important;margin:0!important;padding:0!important;float:none!important}
+body:has(#shed-kiosk){margin:0!important}
+body:has(#shed-kiosk) .grid-container{max-width:none!important;width:100%!important}
+body:has(#shed-kiosk) .shed-kiosk{max-width:none!important;width:100%!important;min-height:100vh;margin:0!important;border-radius:0;box-shadow:none}
+
+body:has(#shed-kiosk) #wpadminbar{display:none!important}
+body:has(#shed-kiosk).admin-bar{margin-top:0!important}
+html:has(#shed-kiosk){margin-top:0!important}
+@media screen and (max-width:782px){html:has(#shed-kiosk){margin-top:0!important}}
+
+/* Enhanced full-width announcement banners */
+.shed-kiosk .shed-kiosk-news{height:98px;min-height:98px}
+.shed-kiosk .shed-kiosk-news-text{font-size:38px;line-height:1.2}
+.shed-kiosk .shed-kiosk-news-urgent{background:#ad1825;color:#fff}
+.shed-kiosk .shed-kiosk-news[hidden]{display:none!important}
+@media(max-width:600px){.shed-kiosk .shed-kiosk-news{height:80px;min-height:80px}.shed-kiosk .shed-kiosk-news-text{font-size:30px}}
+@media(prefers-reduced-motion:reduce){.shed-kiosk .shed-kiosk-news-text{font-size:26px}}
