@@ -19,8 +19,8 @@ function shed_kiosk_shortcode() {
     if (!shed_kiosk_allowed()) {
         return '<p>Sign in with the Shed kiosk account to use attendance check-in.</p>';
     }
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.0');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.0', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.1');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.1', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
