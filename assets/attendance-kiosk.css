@@ -23,3 +23,11 @@ body:has(#shed-kiosk) #wpadminbar{display:none!important}
 body:has(#shed-kiosk).admin-bar{margin-top:0!important}
 html:has(#shed-kiosk){margin-top:0!important}
 @media screen and (max-width:782px){html:has(#shed-kiosk){margin-top:0!important}}
+
+/* Enhanced full-width announcement banners */
+.shed-kiosk .shed-kiosk-news{height:98px;min-height:98px}
+.shed-kiosk .shed-kiosk-news-text{font-size:38px;line-height:1.2}
+.shed-kiosk .shed-kiosk-news-urgent{background:#ad1825;color:#fff}
+.shed-kiosk .shed-kiosk-news[hidden]{display:none!important}
+@media(max-width:600px){.shed-kiosk .shed-kiosk-news{height:80px;min-height:80px}.shed-kiosk .shed-kiosk-news-text{font-size:30px}}
+@media(prefers-reduced-motion:reduce){.shed-kiosk .shed-kiosk-news-text{font-size:26px}}
