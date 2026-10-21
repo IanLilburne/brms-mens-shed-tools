@@ -468,6 +468,8 @@ if (!function_exists('shed_attendance_get_card_cache_payload')) {
                 continue;
             }
 
+            if (strpos((string) $member->card_id, 'FFFFEEEE') === 0) { continue; }
+
             $cards[] = [
                 'cardID' => (string) $member->card_id,
                 'handle' => shed_attendance_member_handle($member),
@@ -1801,7 +1803,7 @@ if (!function_exists('shed_attendance_render_reports_page')) {
                         <?php foreach ($members as $member) : ?>
                             <tr>
                                 <td><code><?php echo esc_html($member->card_id); ?></code></td>
-                                <td><?php echo esc_html($member->member_name); ?></td>
+                                <td><a href="<?php echo esc_url(add_query_arg('member_id', (int) $member->id, admin_url('admin.php?page=shed-attendance'))); ?>"><?php echo esc_html($member->member_name); ?></a></td>
                                 <td><?php echo esc_html($member->handle); ?></td>
                                 <td><?php echo intval($member->is_pending) === 1 ? 'Pending' : (intval($member->is_active) === 1 ? 'Active' : 'Inactive'); ?></td>
                                 <td><?php echo esc_html($member->last_seen_at); ?></td>
