@@ -7,6 +7,13 @@ if (!defined('ABSPATH')) { exit; }
  * Attendance records are stored in the existing attendance tables.
  */
 add_shortcode('shed_attendance_kiosk', 'shed_kiosk_shortcode');
+add_filter('show_admin_bar', 'shed_kiosk_hide_admin_bar');
+function shed_kiosk_hide_admin_bar($show) {
+    if (!is_admin() && is_singular() && is_a(get_post(), 'WP_Post') && has_shortcode((string) get_post()->post_content, 'shed_attendance_kiosk')) {
+        return false;
+    }
+    return $show;
+}
 add_action('rest_api_init', 'shed_kiosk_register_routes');
 add_action('admin_menu', 'shed_kiosk_admin_menu');
 add_action('admin_post_shed_kiosk_save_news', 'shed_kiosk_save_news');
@@ -19,8 +26,8 @@ function shed_kiosk_shortcode() {
     if (!shed_kiosk_allowed()) {
         return '<p>Sign in with the Shed kiosk account to use attendance check-in.</p>';
     }
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.2');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.2', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.3');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.3', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
