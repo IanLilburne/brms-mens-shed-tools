@@ -82,15 +82,20 @@ function shed_kiosk_status(WP_REST_Request $request) {
             'time' => (string) $event->event_time,
         ];
     }
+    $rota = shed_attendance_get_duty_rota_payload($today);
+    $news = array_values(array_filter((array) get_option('shed_kiosk_news', []), function ($item) use ($today) {
+        return !empty($item['message']) && (empty($item['start']) || $item['start'] <= $today)
+            && (empty($item['end']) || $item['end'] >= $today);
+    }));
+    if (!empty($rota['dutyManager'])) {
+        array_unshift($news, ['message' => 'Today\'s duty manager is ' . $rota['dutyManager']]);
+    }
     return rest_ensure_response([
         'present' => count($present),
         'visits' => $visits,
         'latest_id' => (int) $wpdb->get_var("SELECT COALESCE(MAX(id), 0) FROM {$events_table}"),
         'events' => $events,
-        'news' => array_values(array_filter((array) get_option('shed_kiosk_news', []), function ($item) use ($today) {
-            return !empty($item['message']) && (empty($item['start']) || $item['start'] <= $today)
-                && (empty($item['end']) || $item['end'] >= $today);
-        })),
+        'news' => $news,
     ]);
 }
 
