@@ -55,3 +55,28 @@ html:has(#shed-kiosk){margin-top:0!important}
  .shed-kiosk .shed-kiosk-footer strong{font-size:27px}
  .shed-kiosk .shed-kiosk-results{max-height:180px}
 }
+
+/* v0.2.11: float results above the input while the Android keyboard is showing.
+   Overlaying the header avoids the keyboard compressing the available results. */
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results:not(:empty){
+  position:fixed!important;
+  z-index:9999;
+  top:var(--shed-results-top,8px);
+  left:var(--shed-results-left,12px);
+  width:var(--shed-results-width,calc(100% - 24px));
+  max-height:min(228px,calc(100dvh - 16px))!important;
+  overflow-y:auto;
+  margin:0;
+  padding:5px;
+  box-shadow:0 8px 22px #0005;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-member{
+  min-height:49px!important;
+  padding:5px 12px!important;
+  font-size:19px!important;
+  line-height:1.15;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-status{
+  font-size:16px;
+  padding:7px 11px;
+}
