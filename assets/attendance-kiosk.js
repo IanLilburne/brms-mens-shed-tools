@@ -100,11 +100,16 @@
     // The visual viewport shrinks when Android's onscreen keyboard is shown.
     const vv = window.visualViewport;
     const visible = vv ? vv.height : window.innerHeight;
-    const maxHeight = Math.max(100, Math.min(225, Math.round(visible * 0.33)));
-    searchArea.style.setProperty('--shed-results-max-height', maxHeight + 'px');
     const rect = input.getBoundingClientRect();
+    // Show four 49px touch targets plus spacing, as a floating panel over
+    // the otherwise unused header area. Keep it above the visible keyboard.
+    const panelHeight = Math.min(228, Math.max(120, visible - 16));
+    const top = Math.max(8, Math.min(rect.top - panelHeight - 6, visible - panelHeight - 8));
+    searchArea.style.setProperty('--shed-results-top', Math.round(top) + 'px');
+    searchArea.style.setProperty('--shed-results-left', Math.round(rect.left) + 'px');
+    searchArea.style.setProperty('--shed-results-width', Math.round(rect.width) + 'px');
     if (rect.bottom > visible - 12 || rect.top < 0) {
-      input.scrollIntoView({ block: 'end', behavior: 'instant' });
+      input.scrollIntoView({ block: 'end', behavior: 'auto' });
     }
   }
   input.addEventListener('focus', () => { positionSearch(); });
