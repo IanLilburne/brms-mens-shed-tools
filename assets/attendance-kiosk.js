@@ -7,6 +7,9 @@
   const results = $('shed-kiosk-results');
   const feedback = $('shed-kiosk-feedback');
   const clock = $('shed-kiosk-clock');
+  const activation = $('shed-kiosk-activate');
+  const attendance = $('shed-kiosk-attendance');
+  const activateButton = $('shed-kiosk-activate-button');
   let cursor = null;
   let searching = 0;
   let searchTimer = null;
@@ -65,8 +68,13 @@
       const after = cursor === null ? '' : '?after=' + encodeURIComponent(cursor);
       const data = await api('status' + after);
       $('shed-kiosk-connection').hidden = true;
-      $('shed-kiosk-present').textContent = data.present;
-      $('shed-kiosk-visits').textContent = data.visits;
+      const mode = data.device_mode || 'unregistered';
+      activation.hidden = mode !== 'unregistered';
+      attendance.hidden = mode === 'unregistered';
+      input.disabled = mode === 'unregistered';
+      if (mode === 'test' && cursor === null) show('Development mode: attendance is simulated', '');
+      $('shed-kiosk-present').textContent = data.present === null ? '–' : data.present;
+      $('shed-kiosk-visits').textContent = data.visits === null ? '–' : data.visits;
       renderNews(data.news || [], 'shed-kiosk-news', false);
       renderNews(data.urgent_news || [], 'shed-kiosk-news-urgent', true);
       // First request establishes a baseline, so old events aren't presented as fresh swipes.
@@ -139,6 +147,15 @@
     } finally { busy = false; }
   }
 
+  activateButton.addEventListener('click', async () => {
+    activateButton.disabled = true;
+    try {
+      await api('activate', {method:'POST', body:JSON.stringify({code:$('shed-kiosk-code').value.trim()})});
+      $('shed-kiosk-activate-message').textContent = 'Registered. Reloading…';
+      location.reload();
+    } catch(e) { $('shed-kiosk-activate-message').textContent = e.message; }
+    finally { activateButton.disabled = false; }
+  });
   input.addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(search, 180);
