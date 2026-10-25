@@ -128,3 +128,34 @@ html:has(#shed-kiosk){margin-top:0!important}
 .shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-status{
  font-size:14px!important;padding:5px 8px!important;
 }
+
+/* v0.2.13: two-column, compact member selection on landscape tablets. */
+@media (orientation:landscape) {
+ .shed-kiosk .shed-kiosk-results:not(:empty){
+   display:grid!important;
+   grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:5px!important;
+   align-content:start!important;
+ }
+ .shed-kiosk .shed-kiosk-member{
+   min-width:0!important;
+   min-height:44px!important;
+   padding:5px 9px!important;
+   gap:6px!important;
+   font-size:17px!important;
+ }
+ .shed-kiosk .shed-kiosk-member>span:first-child{
+   min-width:0;
+   overflow-wrap:anywhere;
+ }
+ .shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-member{
+   min-height:44px!important;
+   padding:4px 8px!important;
+ }
+ .shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{
+   flex:1 1 0!important;
+   min-height:0!important;
+   max-height:none!important;
+   overflow-y:auto!important;
+ }
+}
