@@ -80,3 +80,51 @@ html:has(#shed-kiosk){margin-top:0!important}
   font-size:16px;
   padding:7px 11px;
 }
+
+/* v0.2.12: use the unobscured visual viewport above Android's IME.
+   Move the WHOLE search interaction into a fixed layer, not just its results. */
+.shed-kiosk .shed-kiosk-search-area.keyboard-active{
+ position:fixed!important;
+ z-index:2147483000;
+ top:var(--shed-view-top,0px)!important;
+ left:var(--shed-view-left,0px)!important;
+ width:var(--shed-view-width,100vw)!important;
+ height:var(--shed-view-height,100vh)!important;
+ max-height:var(--shed-view-height,100vh)!important;
+ display:flex!important;
+ flex-direction:column!important;
+ padding:6px 12px 8px!important;
+ margin:0!important;
+ background:#f5f7f5!important;
+ box-sizing:border-box;
+ overflow:hidden!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{
+ position:static!important;
+ flex:1 1 auto!important;
+ order:0;
+ width:100%!important;
+ max-height:none!important;
+ min-height:0;
+ overflow-y:auto!important;
+ margin:0 0 4px!important;
+ padding:2px!important;
+ box-shadow:none!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active label{
+ order:1;margin:0 0 3px!important;font-size:15px!important;flex:none;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active input{
+ order:2;flex:none;min-height:48px!important;height:48px!important;
+ font-size:21px!important;padding:6px 12px!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-member{
+ min-height:40px!important;padding:3px 9px!important;
+ font-size:17px!important;margin:0!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{
+ gap:3px!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-status{
+ font-size:14px!important;padding:5px 8px!important;
+}
