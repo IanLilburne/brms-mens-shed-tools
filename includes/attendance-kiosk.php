@@ -289,6 +289,9 @@ function shed_kiosk_devices_admin() {
     if (!current_user_can('manage_options')) { wp_die('Not authorised'); }
     $devices = (array) get_option('shed_kiosk_devices', []);
     echo '<div class="wrap"><h1>Kiosk devices</h1><p>Create a one-time registration code, then enter it on the intended device. A live device can record attendance; a test device cannot.</p>';
+    if (trim((string) get_option('shed_attendance_api_key', '')) === '') {
+        echo '<div class="notice notice-error"><p><strong>Security warning:</strong> The ESP32 attendance API has no key configured. Remote callers may still be able to submit card events. Configure the ESP32 API key in Shed Attendance and on the reader before treating attendance as restricted to authorised devices.</p></div>';
+    }
     $code = get_transient('shed_kiosk_last_activation_' . get_current_user_id());
     if ($code) { echo '<div class="notice notice-info"><p>One-time activation code (valid 10 minutes): <strong>' . esc_html($code) . '</strong></p></div>'; }
     echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="shed_kiosk_create_device">';
