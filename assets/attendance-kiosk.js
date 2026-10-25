@@ -5,6 +5,7 @@
   const $ = id => document.getElementById(id);
   const input = $('shed-kiosk-search');
   const results = $('shed-kiosk-results');
+  const searchArea = $('shed-kiosk-search-area');
   const feedback = $('shed-kiosk-feedback');
   const clock = $('shed-kiosk-clock');
   const activation = $('shed-kiosk-activate');
@@ -93,6 +94,22 @@
   }
 
   function clearResults() { results.replaceChildren(); }
+  function positionSearch() {
+    if (document.activeElement !== input) return;
+    searchArea.classList.add('keyboard-active');
+    // The visual viewport shrinks when Android's onscreen keyboard is shown.
+    const vv = window.visualViewport;
+    const visible = vv ? vv.height : window.innerHeight;
+    const maxHeight = Math.max(100, Math.min(225, Math.round(visible * 0.33)));
+    searchArea.style.setProperty('--shed-results-max-height', maxHeight + 'px');
+    const rect = input.getBoundingClientRect();
+    if (rect.bottom > visible - 12 || rect.top < 0) {
+      input.scrollIntoView({ block: 'end', behavior: 'instant' });
+    }
+  }
+  input.addEventListener('focus', () => { positionSearch(); });
+  input.addEventListener('blur', () => searchArea.classList.remove('keyboard-active'));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', positionSearch);
 
   async function search() {
     const query = input.value.trim();
@@ -122,6 +139,7 @@
         button.addEventListener('click', () => check(member, action));
         results.appendChild(button);
       });
+      positionSearch();
     } catch (error) { if (current === searching) show(error.message, 'error'); }
   }
 
