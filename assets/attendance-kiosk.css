@@ -184,3 +184,21 @@ html:has(#shed-kiosk){margin-top:0!important}
 }
 #shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-cancel{display:block!important}
 #shed-kiosk .shed-kiosk-cancel:focus-visible{outline:3px solid #e0a52b}
+
+/* v0.2.16: compact, high-contrast cancel control on search overlay */
+#shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-cancel{
+  align-self:flex-end!important;
+  width:auto!important;
+  min-width:155px;
+  max-width:90%;
+  padding:10px 17px!important;
+  margin:8px 0 0 auto!important;
+  border:0!important;
+  border-radius:9px!important;
+  background:#b42332!important;
+  color:#fff!important;
+  font-size:17px!important;
+  font-weight:700!important;
+  box-shadow:0 2px 5px #0003;
+}
+#shed-kiosk .shed-kiosk-cancel:active{background:#851c29!important}
