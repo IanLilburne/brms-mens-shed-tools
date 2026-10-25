@@ -164,3 +164,23 @@ html:has(#shed-kiosk){margin-top:0!important}
 #shed-kiosk #shed-kiosk-results:not(:empty){display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;align-content:start!important}
 #shed-kiosk #shed-kiosk-results .shed-kiosk-member{min-width:0;max-width:100%;font-size:16px!important;min-height:42px!important;padding:5px 8px!important}
 #shed-kiosk #shed-kiosk-results .shed-kiosk-status{flex-shrink:0;font-size:13px!important;padding:5px 7px!important}
+
+/* Kiosk search escape control */
+#shed-kiosk .shed-kiosk-cancel{
+ display:none;
+ order:3;
+ width:100%;
+ flex:0 0 auto;
+ min-height:43px;
+ margin-top:5px;
+ padding:7px 12px;
+ border:2px solid #275541;
+ border-radius:9px;
+ background:#fff;
+ color:#173f32;
+ font-weight:700;
+ font-size:17px;
+ cursor:pointer;
+}
+#shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-cancel{display:block!important}
+#shed-kiosk .shed-kiosk-cancel:focus-visible{outline:3px solid #e0a52b}
