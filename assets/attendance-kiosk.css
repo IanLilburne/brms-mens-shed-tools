@@ -31,3 +31,27 @@ html:has(#shed-kiosk){margin-top:0!important}
 .shed-kiosk .shed-kiosk-news[hidden]{display:none!important}
 @media(max-width:600px){.shed-kiosk .shed-kiosk-news{height:80px;min-height:80px}.shed-kiosk .shed-kiosk-news-text{font-size:30px}}
 @media(prefers-reduced-motion:reduce){.shed-kiosk .shed-kiosk-news-text{font-size:26px}}
+
+/* Landscape tablet and keyboard-friendly search: results sit ABOVE the input. */
+.shed-kiosk .shed-kiosk-search-area{display:flex;flex-direction:column;min-width:0}
+.shed-kiosk .shed-kiosk-results{order:0;max-height:min(43vh,330px);overflow-y:auto;overscroll-behavior:contain;margin:0 0 10px}
+.shed-kiosk .shed-kiosk-search-area label{order:1}
+.shed-kiosk .shed-kiosk-search-area input{order:2}
+.shed-kiosk .shed-kiosk-results:empty{display:none}
+.shed-kiosk .shed-kiosk-results:not(:empty){background:#ecf3ee;padding:7px;border-radius:12px}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{max-height:var(--shed-results-max-height, 180px)}
+@media(orientation:landscape) and (max-height:760px){
+ .shed-kiosk .shed-kiosk-header{padding:9px 22px}
+ .shed-kiosk .shed-kiosk-header h1{font-size:27px}
+ .shed-kiosk .shed-kiosk-news{height:62px;min-height:62px}
+ .shed-kiosk .shed-kiosk-news-text{font-size:30px}
+ .shed-kiosk .shed-kiosk-main{max-width:100%;padding:6px 24px}
+ .shed-kiosk .shed-kiosk-main h2{font-size:25px;margin:3px}
+ .shed-kiosk .shed-kiosk-feedback{min-height:45px;margin:6px 0;padding:6px;font-size:23px}
+ .shed-kiosk .shed-kiosk-main>p{margin:2px 0}
+ .shed-kiosk .shed-kiosk-member{min-height:48px;padding:7px 12px}
+ .shed-kiosk .shed-kiosk-footer{padding:5px 24px;gap:8px}
+ .shed-kiosk .shed-kiosk-footer>div{padding:4px}
+ .shed-kiosk .shed-kiosk-footer strong{font-size:27px}
+ .shed-kiosk .shed-kiosk-results{max-height:180px}
+}
