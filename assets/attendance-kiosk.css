@@ -267,3 +267,25 @@ html:has(#shed-kiosk){margin-top:0!important}
  z-index:auto!important;
  box-shadow:none!important;
 }
+
+/* v0.2.19: fit header, two tickers and attendance counters on a landscape tablet.
+   The keyboard-focused search overlay remains governed by its own layout. */
+@media (orientation:landscape) and (max-height:900px) {
+ #shed-kiosk.shed-kiosk{min-height:0!important;max-width:none!important;border-radius:0}
+ #shed-kiosk .shed-kiosk-header{padding:5px 18px!important;min-height:0!important}
+ #shed-kiosk .shed-kiosk-header h1{font-size:24px!important;line-height:1.05!important}
+ #shed-kiosk .shed-kiosk-header p{font-size:14px!important;margin:2px 0 0!important}
+ #shed-kiosk .shed-kiosk-clock{font-size:17px!important}
+ #shed-kiosk .shed-kiosk-news{height:42px!important;min-height:42px!important}
+ #shed-kiosk .shed-kiosk-news-text{font-size:25px!important;line-height:1.1!important}
+ #shed-kiosk .shed-kiosk-main{padding:4px 18px 2px!important}
+ #shed-kiosk .shed-kiosk-main h2{font-size:23px!important;margin:2px 0!important;line-height:1.15!important}
+ #shed-kiosk .shed-kiosk-main>p{font-size:14px!important;margin:2px 0 4px!important}
+ #shed-kiosk .shed-kiosk-feedback{min-height:40px!important;padding:5px 10px!important;margin:4px 0!important;font-size:21px!important}
+ #shed-kiosk .shed-kiosk-main label{font-size:16px!important;margin:4px 0 2px!important}
+ #shed-kiosk input[type=search]{min-height:44px!important;padding:7px 12px!important;font-size:20px!important}
+ #shed-kiosk .shed-kiosk-footer{gap:10px!important;padding:4px 18px 7px!important}
+ #shed-kiosk .shed-kiosk-footer>div{padding:5px 10px!important;border-radius:8px!important}
+ #shed-kiosk .shed-kiosk-footer strong{font-size:27px!important;line-height:1.1!important}
+ #shed-kiosk .shed-kiosk-footer span{font-size:13px!important;line-height:1.15!important}
+}
