@@ -38,8 +38,8 @@ function shed_kiosk_allowed() {
 }
 
 function shed_kiosk_shortcode() {
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.9');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.9', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.10');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.10', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
@@ -51,9 +51,11 @@ function shed_kiosk_shortcode() {
         <section id="shed-kiosk-activate" class="shed-kiosk-main" hidden><h2>Register this device</h2><p>Enter the one-time code issued in Shed Attendance → Kiosk devices.</p><input id="shed-kiosk-code" type="text" autocomplete="off" placeholder="Activation code" /><button id="shed-kiosk-activate-button" type="button">Register device</button><p id="shed-kiosk-activate-message" role="status"></p></section>
         <section id="shed-kiosk-attendance" class="shed-kiosk-main" hidden><h2>Sign in or out</h2><p>Tap your RFID card or find your name below.</p>
           <div class="shed-kiosk-feedback" id="shed-kiosk-feedback" role="status" aria-live="polite">Ready for your card or name</div>
-          <label for="shed-kiosk-search">Find your name</label>
-          <input type="search" id="shed-kiosk-search" autocomplete="off" placeholder="Start typing your name…" />
-          <div id="shed-kiosk-results" class="shed-kiosk-results" role="listbox" aria-label="Matching members"></div>
+          <div class="shed-kiosk-search-area" id="shed-kiosk-search-area">
+            <div id="shed-kiosk-results" class="shed-kiosk-results" role="listbox" aria-label="Matching members"></div>
+            <label for="shed-kiosk-search">Find your name</label>
+            <input type="search" id="shed-kiosk-search" autocomplete="off" placeholder="Start typing your name…" />
+          </div>
         </section>
         <footer class="shed-kiosk-footer"><div><strong id="shed-kiosk-present">–</strong><span>Currently in Shed</span></div><div><strong id="shed-kiosk-visits">–</strong><span>Visits today</span></div></footer>
         <div id="shed-kiosk-connection" class="shed-kiosk-connection" hidden>Connection lost. Reconnecting…</div>
