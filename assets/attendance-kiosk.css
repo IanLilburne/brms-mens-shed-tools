@@ -289,3 +289,50 @@ html:has(#shed-kiosk){margin-top:0!important}
  #shed-kiosk .shed-kiosk-footer strong{font-size:27px!important;line-height:1.1!important}
  #shed-kiosk .shed-kiosk-footer span{font-size:13px!important;line-height:1.15!important}
 }
+
+/* v0.2.20: balanced landscape proportions after over-compression.
+   Aim to fill the tablet without allowing the footer to run below the viewport. */
+@media (orientation:landscape) and (max-height:900px) {
+ #shed-kiosk.shed-kiosk{
+   min-height:min(100dvh,100vh)!important;
+   display:flex!important;
+   flex-direction:column!important;
+ }
+ #shed-kiosk .shed-kiosk-header{
+   padding:10px 22px!important;
+   flex:0 0 auto!important;
+ }
+ #shed-kiosk .shed-kiosk-header h1{font-size:29px!important}
+ #shed-kiosk .shed-kiosk-header p{font-size:16px!important;margin:4px 0 0!important}
+ #shed-kiosk .shed-kiosk-news{
+   height:clamp(48px,8vh,64px)!important;
+   min-height:clamp(48px,8vh,64px)!important;
+   flex:0 0 auto!important;
+ }
+ #shed-kiosk .shed-kiosk-news-text{font-size:29px!important}
+ #shed-kiosk .shed-kiosk-main{
+   flex:1 1 auto!important;
+   display:flex!important;
+   flex-direction:column!important;
+   justify-content:center!important;
+   width:100%!important;
+   padding:8px 22px!important;
+ }
+ #shed-kiosk .shed-kiosk-main h2{font-size:28px!important;margin:5px 0!important}
+ #shed-kiosk .shed-kiosk-main>p{font-size:16px!important;margin:4px 0 8px!important}
+ #shed-kiosk .shed-kiosk-feedback{
+   min-height:54px!important;
+   padding:9px 14px!important;
+   margin:9px 0!important;
+   font-size:25px!important;
+ }
+ #shed-kiosk .shed-kiosk-main label{font-size:19px!important;margin:7px 0 4px!important}
+ #shed-kiosk input[type=search]{min-height:54px!important;padding:10px 14px!important;font-size:23px!important}
+ #shed-kiosk .shed-kiosk-footer{
+   flex:0 0 auto!important;
+   padding:9px 22px 13px!important;
+ }
+ #shed-kiosk .shed-kiosk-footer>div{padding:10px 14px!important}
+ #shed-kiosk .shed-kiosk-footer strong{font-size:34px!important}
+ #shed-kiosk .shed-kiosk-footer span{font-size:15px!important}
+}
