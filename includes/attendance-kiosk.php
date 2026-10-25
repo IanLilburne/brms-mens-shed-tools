@@ -38,8 +38,8 @@ function shed_kiosk_allowed() {
 }
 
 function shed_kiosk_shortcode() {
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.14');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.14', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.15');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.15', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
@@ -55,6 +55,7 @@ function shed_kiosk_shortcode() {
             <div id="shed-kiosk-results" class="shed-kiosk-results" role="listbox" aria-label="Matching members"></div>
             <label for="shed-kiosk-search">Find your name</label>
             <input type="search" id="shed-kiosk-search" autocomplete="off" placeholder="Start typing your name…" />
+            <button type="button" id="shed-kiosk-cancel" class="shed-kiosk-cancel" aria-label="Cancel name search">Cancel • Back to welcome screen</button>
           </div>
         </section>
         <footer class="shed-kiosk-footer"><div><strong id="shed-kiosk-present">–</strong><span>Currently in Shed</span></div><div><strong id="shed-kiosk-visits">–</strong><span>Visits today</span></div></footer>
