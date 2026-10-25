@@ -5,6 +5,9 @@
   const $ = id => document.getElementById(id);
   const input = $('shed-kiosk-search');
   const results = $('shed-kiosk-results');
+  // Explicit grid styling protects the two-column layout against theme rules.
+  results.style.setProperty('display', 'grid', 'important');
+  results.style.setProperty('grid-template-columns', 'repeat(2,minmax(0,1fr))', 'important');
   const searchArea = $('shed-kiosk-search-area');
   const feedback = $('shed-kiosk-feedback');
   const clock = $('shed-kiosk-clock');
