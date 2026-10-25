@@ -336,3 +336,11 @@ html:has(#shed-kiosk){margin-top:0!important}
  #shed-kiosk .shed-kiosk-footer strong{font-size:34px!important}
  #shed-kiosk .shed-kiosk-footer span{font-size:15px!important}
 }
+
+/* v0.2.21: the landscape flex display must NEVER override hidden sections.
+   Activation and attendance are mutually exclusive based on device registration. */
+#shed-kiosk #shed-kiosk-activate[hidden],
+#shed-kiosk #shed-kiosk-attendance[hidden],
+#shed-kiosk [hidden]{
+  display:none!important;
+}
