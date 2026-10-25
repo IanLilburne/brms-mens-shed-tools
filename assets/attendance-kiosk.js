@@ -96,25 +96,36 @@
   function clearResults() { results.replaceChildren(); }
   function positionSearch() {
     if (document.activeElement !== input) return;
+    document.body.classList.add('shed-searching');
     searchArea.classList.add('keyboard-active');
-    // The visual viewport shrinks when Android's onscreen keyboard is shown.
+    // visualViewport is the unobscured area ABOVE the native Android keyboard.
     const vv = window.visualViewport;
-    const visible = vv ? vv.height : window.innerHeight;
-    const rect = input.getBoundingClientRect();
-    // Show four 49px touch targets plus spacing, as a floating panel over
-    // the otherwise unused header area. Keep it above the visible keyboard.
-    const panelHeight = Math.min(228, Math.max(120, visible - 16));
-    const top = Math.max(8, Math.min(rect.top - panelHeight - 6, visible - panelHeight - 8));
-    searchArea.style.setProperty('--shed-results-top', Math.round(top) + 'px');
-    searchArea.style.setProperty('--shed-results-left', Math.round(rect.left) + 'px');
-    searchArea.style.setProperty('--shed-results-width', Math.round(rect.width) + 'px');
-    if (rect.bottom > visible - 12 || rect.top < 0) {
-      input.scrollIntoView({ block: 'end', behavior: 'auto' });
-    }
+    const height = vv ? vv.height : window.innerHeight;
+    const top = vv ? vv.offsetTop : 0;
+    const left = vv ? vv.offsetLeft : 0;
+    const width = vv ? vv.width : window.innerWidth;
+    searchArea.style.setProperty('--shed-view-top', Math.round(top) + 'px');
+    searchArea.style.setProperty('--shed-view-left', Math.round(left) + 'px');
+    searchArea.style.setProperty('--shed-view-width', Math.round(width) + 'px');
+    searchArea.style.setProperty('--shed-view-height', Math.round(height) + 'px');
   }
-  input.addEventListener('focus', () => { positionSearch(); });
-  input.addEventListener('blur', () => searchArea.classList.remove('keyboard-active'));
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', positionSearch);
+  function exitSearch() {
+    searchArea.classList.remove('keyboard-active');
+    document.body.classList.remove('shed-searching');
+  }
+  input.addEventListener('focus', () => {
+    positionSearch();
+    setTimeout(positionSearch, 250);
+    setTimeout(positionSearch, 600);
+  });
+  input.addEventListener('blur', () => {
+    // Delay allows the member button click to complete.
+    setTimeout(() => { if (document.activeElement !== input) exitSearch(); }, 200);
+  });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', positionSearch);
+    window.visualViewport.addEventListener('scroll', positionSearch);
+  }
 
   async function search() {
     const query = input.value.trim();
@@ -161,6 +172,8 @@
       });
       show((action === 'in' ? (data.returning ? 'Good to see you again, ' : 'Welcome, ') : 'Goodbye, ') + data.name + '!', action);
       input.value = '';
+      input.blur();
+      exitSearch();
       ++searching;
       clearResults();
       refresh();
