@@ -3,7 +3,7 @@
  * Plugin Name: Men's Shed Tools
  * Plugin URI: https://brms.org.uk/
  * Description: Custom tools for Brundall Men's Shed workflow, dashboards, and forms.
- * Version: 0.1.0
+ * Version: 0.2.21
  * Author: Brundall Men's Shed
  * License: GPL2+
  */
@@ -27,6 +27,8 @@ require_once MENS_SHED_TOOLS_PATH . 'includes/volunteer-commitments-report.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/admin-cleanup.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/attendance-report-fix.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/attendance.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/attendance-absence-report.php';
+require_once MENS_SHED_TOOLS_PATH . 'includes/attendance-kiosk.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/ai/class-ai-rewrite-service.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/images/class-image-service.php';
 require_once MENS_SHED_TOOLS_PATH . 'includes/modules/posts/class-post-service.php';

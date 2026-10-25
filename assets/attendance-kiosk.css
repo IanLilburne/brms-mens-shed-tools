@@ -1,0 +1,346 @@
+.shed-kiosk{box-sizing:border-box;max-width:1180px;min-height:85vh;margin:0 auto;background:#f5f7f5;color:#18352c;font-family:system-ui,-apple-system,sans-serif;border-radius:14px;overflow:hidden;box-shadow:0 5px 30px #0002}.shed-kiosk *{box-sizing:border-box}.shed-kiosk-header{background:#173f32;color:white;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;gap:16px}.shed-kiosk h1{color:white;font-size:clamp(24px,3.5vw,38px);margin:0;line-height:1.15}.shed-kiosk-header p{color:#d8ebe0;margin:6px 0 0}.shed-kiosk-clock{font-size:clamp(16px,2vw,24px);font-weight:700;white-space:nowrap}.shed-kiosk-news{position:relative;overflow:hidden;background:#326d55;color:white;height:49px;display:flex;align-items:center;white-space:nowrap}.shed-kiosk-news-text{padding-left:100%;display:inline-block;animation:shed-kiosk-ticker 25s linear infinite;font-size:19px}@keyframes shed-kiosk-ticker{to{transform:translateX(-100%)}}.shed-kiosk-main{max-width:780px;margin:auto;padding:20px 26px 34px;text-align:center}.shed-kiosk-main h2{font-size:clamp(29px,4vw,44px);margin:6px 0 6px}.shed-kiosk-main>p{margin:0 0 15px}.shed-kiosk-feedback{font-size:clamp(22px,3.4vw,36px);font-weight:700;background:#e5ebeb;border-radius:12px;padding:18px;margin:20px 0;min-height:90px;display:flex;align-items:center;justify-content:center}.shed-kiosk-feedback.in{background:#d9f4e0;color:#145a28}.shed-kiosk-feedback.out{background:#d8eafa;color:#17456c}.shed-kiosk-feedback.error{background:#ffe4df;color:#9c261c}.shed-kiosk-main label{display:block;text-align:left;font-size:21px;font-weight:650;margin:10px 0 5px}.shed-kiosk input[type=search]{width:100%;padding:15px 17px;font-size:25px;min-height:62px;background:white;border:2px solid #8ca49a;border-radius:9px;color:#18352c}.shed-kiosk-results{display:grid;gap:8px;margin-top:12px;text-align:left}.shed-kiosk-member{display:flex;justify-content:space-between;align-items:center;gap:15px;width:100%;padding:14px 17px;min-height:64px;font-size:clamp(20px,2.5vw,26px);background:#fff;border:1px solid #cbd8d0;border-radius:10px;color:#18352c;cursor:pointer;text-align:left}.shed-kiosk-member:focus-visible,.shed-kiosk-member:hover{outline:3px solid #25865a}.shed-kiosk-status{color:#fff;background:#246b4b;padding:9px 15px;border-radius:9px;font-size:19px;white-space:nowrap}.shed-kiosk-footer{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:15px 24px 25px}.shed-kiosk-footer>div{border:1px solid #d3dfd6;background:white;border-radius:12px;padding:15px;display:flex;flex-direction:column;align-items:center}.shed-kiosk-footer strong{font-size:clamp(34px,5vw,54px)}.shed-kiosk-footer span{font-size:16px}.shed-kiosk-connection{position:sticky;bottom:0;text-align:center;background:#a52a20;color:white;font-size:20px;padding:13px}.shed-kiosk-connection[hidden]{display:none}@media(max-width:600px){.shed-kiosk-header{padding:16px}.shed-kiosk-main{padding:15px}.shed-kiosk-footer{padding:12px}.shed-kiosk-member{font-size:19px}}@media(prefers-reduced-motion:reduce){.shed-kiosk-news-text{animation:none;padding-left:10px;white-space:normal;font-size:16px}}
+/* Full-browser kiosk presentation: specifically scope layout resets to the kiosk page. */
+body:has(#shed-kiosk) .site-header,
+body:has(#shed-kiosk) .main-navigation,
+body:has(#shed-kiosk) .site-footer,
+body:has(#shed-kiosk) .entry-header,
+body:has(#shed-kiosk) .sidebar,
+body:has(#shed-kiosk) #secondary {display:none!important}
+body:has(#shed-kiosk) #page,
+body:has(#shed-kiosk) #content,
+body:has(#shed-kiosk) #primary,
+body:has(#shed-kiosk) .site-content,
+body:has(#shed-kiosk) .content-area,
+body:has(#shed-kiosk) .inside-article,
+body:has(#shed-kiosk) .entry-content,
+body:has(#shed-kiosk) .site-main,
+body:has(#shed-kiosk) .inside-site-info {max-width:none!important;width:100%!important;margin:0!important;padding:0!important;float:none!important}
+body:has(#shed-kiosk){margin:0!important}
+body:has(#shed-kiosk) .grid-container{max-width:none!important;width:100%!important}
+body:has(#shed-kiosk) .shed-kiosk{max-width:none!important;width:100%!important;min-height:100vh;margin:0!important;border-radius:0;box-shadow:none}
+
+body:has(#shed-kiosk) #wpadminbar{display:none!important}
+body:has(#shed-kiosk).admin-bar{margin-top:0!important}
+html:has(#shed-kiosk){margin-top:0!important}
+@media screen and (max-width:782px){html:has(#shed-kiosk){margin-top:0!important}}
+
+/* Enhanced full-width announcement banners */
+.shed-kiosk .shed-kiosk-news{height:98px;min-height:98px}
+.shed-kiosk .shed-kiosk-news-text{font-size:38px;line-height:1.2}
+.shed-kiosk .shed-kiosk-news-urgent{background:#ad1825;color:#fff}
+.shed-kiosk .shed-kiosk-news[hidden]{display:none!important}
+@media(max-width:600px){.shed-kiosk .shed-kiosk-news{height:80px;min-height:80px}.shed-kiosk .shed-kiosk-news-text{font-size:30px}}
+@media(prefers-reduced-motion:reduce){.shed-kiosk .shed-kiosk-news-text{font-size:26px}}
+
+/* Landscape tablet and keyboard-friendly search: results sit ABOVE the input. */
+.shed-kiosk .shed-kiosk-search-area{display:flex;flex-direction:column;min-width:0}
+.shed-kiosk .shed-kiosk-results{order:0;max-height:min(43vh,330px);overflow-y:auto;overscroll-behavior:contain;margin:0 0 10px}
+.shed-kiosk .shed-kiosk-search-area label{order:1}
+.shed-kiosk .shed-kiosk-search-area input{order:2}
+.shed-kiosk .shed-kiosk-results:empty{display:none}
+.shed-kiosk .shed-kiosk-results:not(:empty){background:#ecf3ee;padding:7px;border-radius:12px}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{max-height:var(--shed-results-max-height, 180px)}
+@media(orientation:landscape) and (max-height:760px){
+ .shed-kiosk .shed-kiosk-header{padding:9px 22px}
+ .shed-kiosk .shed-kiosk-header h1{font-size:27px}
+ .shed-kiosk .shed-kiosk-news{height:62px;min-height:62px}
+ .shed-kiosk .shed-kiosk-news-text{font-size:30px}
+ .shed-kiosk .shed-kiosk-main{max-width:100%;padding:6px 24px}
+ .shed-kiosk .shed-kiosk-main h2{font-size:25px;margin:3px}
+ .shed-kiosk .shed-kiosk-feedback{min-height:45px;margin:6px 0;padding:6px;font-size:23px}
+ .shed-kiosk .shed-kiosk-main>p{margin:2px 0}
+ .shed-kiosk .shed-kiosk-member{min-height:48px;padding:7px 12px}
+ .shed-kiosk .shed-kiosk-footer{padding:5px 24px;gap:8px}
+ .shed-kiosk .shed-kiosk-footer>div{padding:4px}
+ .shed-kiosk .shed-kiosk-footer strong{font-size:27px}
+ .shed-kiosk .shed-kiosk-results{max-height:180px}
+}
+
+/* v0.2.11: float results above the input while the Android keyboard is showing.
+   Overlaying the header avoids the keyboard compressing the available results. */
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results:not(:empty){
+  position:fixed!important;
+  z-index:9999;
+  top:var(--shed-results-top,8px);
+  left:var(--shed-results-left,12px);
+  width:var(--shed-results-width,calc(100% - 24px));
+  max-height:min(228px,calc(100dvh - 16px))!important;
+  overflow-y:auto;
+  margin:0;
+  padding:5px;
+  box-shadow:0 8px 22px #0005;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-member{
+  min-height:49px!important;
+  padding:5px 12px!important;
+  font-size:19px!important;
+  line-height:1.15;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-status{
+  font-size:16px;
+  padding:7px 11px;
+}
+
+/* v0.2.12: use the unobscured visual viewport above Android's IME.
+   Move the WHOLE search interaction into a fixed layer, not just its results. */
+.shed-kiosk .shed-kiosk-search-area.keyboard-active{
+ position:fixed!important;
+ z-index:2147483000;
+ top:var(--shed-view-top,0px)!important;
+ left:var(--shed-view-left,0px)!important;
+ width:var(--shed-view-width,100vw)!important;
+ height:var(--shed-view-height,100vh)!important;
+ max-height:var(--shed-view-height,100vh)!important;
+ display:flex!important;
+ flex-direction:column!important;
+ padding:6px 12px 8px!important;
+ margin:0!important;
+ background:#f5f7f5!important;
+ box-sizing:border-box;
+ overflow:hidden!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{
+ position:static!important;
+ flex:1 1 auto!important;
+ order:0;
+ width:100%!important;
+ max-height:none!important;
+ min-height:0;
+ overflow-y:auto!important;
+ margin:0 0 4px!important;
+ padding:2px!important;
+ box-shadow:none!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active label{
+ order:1;margin:0 0 3px!important;font-size:15px!important;flex:none;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active input{
+ order:2;flex:none;min-height:48px!important;height:48px!important;
+ font-size:21px!important;padding:6px 12px!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-member{
+ min-height:40px!important;padding:3px 9px!important;
+ font-size:17px!important;margin:0!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{
+ gap:3px!important;
+}
+.shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-status{
+ font-size:14px!important;padding:5px 8px!important;
+}
+
+/* v0.2.13: two-column, compact member selection on landscape tablets. */
+@media (orientation:landscape) {
+ .shed-kiosk .shed-kiosk-results:not(:empty){
+   display:grid!important;
+   grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:5px!important;
+   align-content:start!important;
+ }
+ .shed-kiosk .shed-kiosk-member{
+   min-width:0!important;
+   min-height:44px!important;
+   padding:5px 9px!important;
+   gap:6px!important;
+   font-size:17px!important;
+ }
+ .shed-kiosk .shed-kiosk-member>span:first-child{
+   min-width:0;
+   overflow-wrap:anywhere;
+ }
+ .shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-member{
+   min-height:44px!important;
+   padding:4px 8px!important;
+ }
+ .shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-results{
+   flex:1 1 0!important;
+   min-height:0!important;
+   max-height:none!important;
+   overflow-y:auto!important;
+ }
+}
+
+/* v0.2.14: two columns independent of reported orientation or keyboard size. */
+#shed-kiosk #shed-kiosk-results:not(:empty){display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px!important;align-content:start!important}
+#shed-kiosk #shed-kiosk-results .shed-kiosk-member{min-width:0;max-width:100%;font-size:16px!important;min-height:42px!important;padding:5px 8px!important}
+#shed-kiosk #shed-kiosk-results .shed-kiosk-status{flex-shrink:0;font-size:13px!important;padding:5px 7px!important}
+
+/* Kiosk search escape control */
+#shed-kiosk .shed-kiosk-cancel{
+ display:none;
+ order:3;
+ width:100%;
+ flex:0 0 auto;
+ min-height:43px;
+ margin-top:5px;
+ padding:7px 12px;
+ border:2px solid #275541;
+ border-radius:9px;
+ background:#fff;
+ color:#173f32;
+ font-weight:700;
+ font-size:17px;
+ cursor:pointer;
+}
+#shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-cancel{display:block!important}
+#shed-kiosk .shed-kiosk-cancel:focus-visible{outline:3px solid #e0a52b}
+
+/* v0.2.16: compact, high-contrast cancel control on search overlay */
+#shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-cancel{
+  align-self:flex-end!important;
+  width:auto!important;
+  min-width:155px;
+  max-width:90%;
+  padding:10px 17px!important;
+  margin:8px 0 0 auto!important;
+  border:0!important;
+  border-radius:9px!important;
+  background:#b42332!important;
+  color:#fff!important;
+  font-size:17px!important;
+  font-weight:700!important;
+  box-shadow:0 2px 5px #0003;
+}
+#shed-kiosk .shed-kiosk-cancel:active{background:#851c29!important}
+
+/* v0.2.17: keep Cancel in a separate toolbar above the results grid.
+   Grid rows scroll only within their own region; never cover the control. */
+#shed-kiosk .shed-kiosk-search-area.keyboard-active .shed-kiosk-cancel{
+ order:-1!important;
+ position:relative!important;
+ z-index:2!important;
+ flex:0 0 auto!important;
+ align-self:flex-end!important;
+ margin:0 0 8px auto!important;
+}
+#shed-kiosk .shed-kiosk-search-area.keyboard-active #shed-kiosk-results{
+ order:0!important;
+ flex:1 1 0!important;
+ min-height:0!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+ align-content:start!important;
+}
+
+/* v0.2.18: one definitive search-screen layout. Never float member rows. */
+#shed-kiosk #shed-kiosk-search-area.keyboard-active{
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:stretch!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active #shed-kiosk-cancel{
+ order:0!important;
+ position:static!important;
+ align-self:flex-end!important;
+ flex:0 0 auto!important;
+ margin:0 0 8px auto!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active label{
+ order:1!important;
+ position:static!important;
+ flex:0 0 auto!important;
+ margin:0 0 3px!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active #shed-kiosk-search{
+ order:2!important;
+ position:static!important;
+ flex:0 0 auto!important;
+ margin:0 0 6px!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active #shed-kiosk-results{
+ order:3!important;
+ position:static!important;
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ align-content:start!important;
+ align-self:stretch!important;
+ flex:1 1 auto!important;
+ min-height:0!important;
+ max-height:none!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+ top:auto!important;
+ left:auto!important;
+ width:100%!important;
+ margin:0!important;
+ transform:none!important;
+ z-index:auto!important;
+ box-shadow:none!important;
+}
+
+/* v0.2.19: fit header, two tickers and attendance counters on a landscape tablet.
+   The keyboard-focused search overlay remains governed by its own layout. */
+@media (orientation:landscape) and (max-height:900px) {
+ #shed-kiosk.shed-kiosk{min-height:0!important;max-width:none!important;border-radius:0}
+ #shed-kiosk .shed-kiosk-header{padding:5px 18px!important;min-height:0!important}
+ #shed-kiosk .shed-kiosk-header h1{font-size:24px!important;line-height:1.05!important}
+ #shed-kiosk .shed-kiosk-header p{font-size:14px!important;margin:2px 0 0!important}
+ #shed-kiosk .shed-kiosk-clock{font-size:17px!important}
+ #shed-kiosk .shed-kiosk-news{height:42px!important;min-height:42px!important}
+ #shed-kiosk .shed-kiosk-news-text{font-size:25px!important;line-height:1.1!important}
+ #shed-kiosk .shed-kiosk-main{padding:4px 18px 2px!important}
+ #shed-kiosk .shed-kiosk-main h2{font-size:23px!important;margin:2px 0!important;line-height:1.15!important}
+ #shed-kiosk .shed-kiosk-main>p{font-size:14px!important;margin:2px 0 4px!important}
+ #shed-kiosk .shed-kiosk-feedback{min-height:40px!important;padding:5px 10px!important;margin:4px 0!important;font-size:21px!important}
+ #shed-kiosk .shed-kiosk-main label{font-size:16px!important;margin:4px 0 2px!important}
+ #shed-kiosk input[type=search]{min-height:44px!important;padding:7px 12px!important;font-size:20px!important}
+ #shed-kiosk .shed-kiosk-footer{gap:10px!important;padding:4px 18px 7px!important}
+ #shed-kiosk .shed-kiosk-footer>div{padding:5px 10px!important;border-radius:8px!important}
+ #shed-kiosk .shed-kiosk-footer strong{font-size:27px!important;line-height:1.1!important}
+ #shed-kiosk .shed-kiosk-footer span{font-size:13px!important;line-height:1.15!important}
+}
+
+/* v0.2.20: balanced landscape proportions after over-compression.
+   Aim to fill the tablet without allowing the footer to run below the viewport. */
+@media (orientation:landscape) and (max-height:900px) {
+ #shed-kiosk.shed-kiosk{
+   min-height:min(100dvh,100vh)!important;
+   display:flex!important;
+   flex-direction:column!important;
+ }
+ #shed-kiosk .shed-kiosk-header{
+   padding:10px 22px!important;
+   flex:0 0 auto!important;
+ }
+ #shed-kiosk .shed-kiosk-header h1{font-size:29px!important}
+ #shed-kiosk .shed-kiosk-header p{font-size:16px!important;margin:4px 0 0!important}
+ #shed-kiosk .shed-kiosk-news{
+   height:clamp(48px,8vh,64px)!important;
+   min-height:clamp(48px,8vh,64px)!important;
+   flex:0 0 auto!important;
+ }
+ #shed-kiosk .shed-kiosk-news-text{font-size:29px!important}
+ #shed-kiosk .shed-kiosk-main{
+   flex:1 1 auto!important;
+   display:flex!important;
+   flex-direction:column!important;
+   justify-content:center!important;
+   width:100%!important;
+   padding:8px 22px!important;
+ }
+ #shed-kiosk .shed-kiosk-main h2{font-size:28px!important;margin:5px 0!important}
+ #shed-kiosk .shed-kiosk-main>p{font-size:16px!important;margin:4px 0 8px!important}
+ #shed-kiosk .shed-kiosk-feedback{
+   min-height:54px!important;
+   padding:9px 14px!important;
+   margin:9px 0!important;
+   font-size:25px!important;
+ }
+ #shed-kiosk .shed-kiosk-main label{font-size:19px!important;margin:7px 0 4px!important}
+ #shed-kiosk input[type=search]{min-height:54px!important;padding:10px 14px!important;font-size:23px!important}
+ #shed-kiosk .shed-kiosk-footer{
+   flex:0 0 auto!important;
+   padding:9px 22px 13px!important;
+ }
+ #shed-kiosk .shed-kiosk-footer>div{padding:10px 14px!important}
+ #shed-kiosk .shed-kiosk-footer strong{font-size:34px!important}
+ #shed-kiosk .shed-kiosk-footer span{font-size:15px!important}
+}
+
+/* v0.2.21: the landscape flex display must NEVER override hidden sections.
+   Activation and attendance are mutually exclusive based on device registration. */
+#shed-kiosk #shed-kiosk-activate[hidden],
+#shed-kiosk #shed-kiosk-attendance[hidden],
+#shed-kiosk [hidden]{
+  display:none!important;
+}
