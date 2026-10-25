@@ -9,6 +9,7 @@
   results.style.setProperty('display', 'grid', 'important');
   results.style.setProperty('grid-template-columns', 'repeat(2,minmax(0,1fr))', 'important');
   const searchArea = $('shed-kiosk-search-area');
+  const cancelButton = $('shed-kiosk-cancel');
   const feedback = $('shed-kiosk-feedback');
   const clock = $('shed-kiosk-clock');
   const activation = $('shed-kiosk-activate');
@@ -129,6 +130,22 @@
     window.visualViewport.addEventListener('resize', positionSearch);
     window.visualViewport.addEventListener('scroll', positionSearch);
   }
+
+  function cancelSearch() {
+    clearTimeout(searchTimer);
+    ++searching;
+    input.value = '';
+    clearResults();
+    input.blur();
+    exitSearch();
+  }
+  cancelButton.addEventListener('click', cancelSearch);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && searchArea.classList.contains('keyboard-active')) {
+      event.preventDefault();
+      cancelSearch();
+    }
+  });
 
   async function search() {
     const query = input.value.trim();
