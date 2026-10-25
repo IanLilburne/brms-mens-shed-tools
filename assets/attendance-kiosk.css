@@ -221,3 +221,49 @@ html:has(#shed-kiosk){margin-top:0!important}
  overflow-x:hidden!important;
  align-content:start!important;
 }
+
+/* v0.2.18: one definitive search-screen layout. Never float member rows. */
+#shed-kiosk #shed-kiosk-search-area.keyboard-active{
+ display:flex!important;
+ flex-direction:column!important;
+ align-items:stretch!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active #shed-kiosk-cancel{
+ order:0!important;
+ position:static!important;
+ align-self:flex-end!important;
+ flex:0 0 auto!important;
+ margin:0 0 8px auto!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active label{
+ order:1!important;
+ position:static!important;
+ flex:0 0 auto!important;
+ margin:0 0 3px!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active #shed-kiosk-search{
+ order:2!important;
+ position:static!important;
+ flex:0 0 auto!important;
+ margin:0 0 6px!important;
+}
+#shed-kiosk #shed-kiosk-search-area.keyboard-active #shed-kiosk-results{
+ order:3!important;
+ position:static!important;
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ align-content:start!important;
+ align-self:stretch!important;
+ flex:1 1 auto!important;
+ min-height:0!important;
+ max-height:none!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+ top:auto!important;
+ left:auto!important;
+ width:100%!important;
+ margin:0!important;
+ transform:none!important;
+ z-index:auto!important;
+ box-shadow:none!important;
+}
