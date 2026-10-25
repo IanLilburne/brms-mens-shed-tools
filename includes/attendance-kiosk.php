@@ -38,11 +38,8 @@ function shed_kiosk_allowed() {
 }
 
 function shed_kiosk_shortcode() {
-    if (!shed_kiosk_allowed()) {
-        return '<p>Sign in with the Shed kiosk account to use attendance check-in.</p>';
-    }
-    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.5');
-    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.5', true);
+    wp_enqueue_style('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.css', [], '0.2.8');
+    wp_enqueue_script('shed-kiosk', MENS_SHED_TOOLS_URL . 'assets/attendance-kiosk.js', [], '0.2.8', true);
     wp_localize_script('shed-kiosk', 'shedKioskConfig', [
         'base' => esc_url_raw(rest_url('shed/v1/kiosk/')),
         'nonce' => wp_create_nonce('wp_rest'),
@@ -51,7 +48,8 @@ function shed_kiosk_shortcode() {
         <header class="shed-kiosk-header"><div><h1>Brundall Mens Shed</h1><p>Welcome to our Shed</p></div><div class="shed-kiosk-clock" id="shed-kiosk-clock"></div></header>
         <div class="shed-kiosk-news" id="shed-kiosk-news" aria-label="Latest announcements"><span>Loading announcements…</span></div>
         <div class="shed-kiosk-news shed-kiosk-news-urgent" id="shed-kiosk-news-urgent" aria-label="Announcements ending soon" hidden></div>
-        <section class="shed-kiosk-main"><h2>Sign in or out</h2><p>Tap your RFID card or find your name below.</p>
+        <section id="shed-kiosk-activate" class="shed-kiosk-main" hidden><h2>Register this device</h2><p>Enter the one-time code issued in Shed Attendance → Kiosk devices.</p><input id="shed-kiosk-code" type="text" autocomplete="off" placeholder="Activation code" /><button id="shed-kiosk-activate-button" type="button">Register device</button><p id="shed-kiosk-activate-message" role="status"></p></section>
+        <section id="shed-kiosk-attendance" class="shed-kiosk-main" hidden><h2>Sign in or out</h2><p>Tap your RFID card or find your name below.</p>
           <div class="shed-kiosk-feedback" id="shed-kiosk-feedback" role="status" aria-live="polite">Ready for your card or name</div>
           <label for="shed-kiosk-search">Find your name</label>
           <input type="search" id="shed-kiosk-search" autocomplete="off" placeholder="Start typing your name…" />
@@ -64,6 +62,7 @@ function shed_kiosk_shortcode() {
 
 function shed_kiosk_register_routes() {
     $routes = [
+        '/kiosk/activate' => ['POST', 'shed_kiosk_activate'],
         '/kiosk/status' => ['GET', 'shed_kiosk_status'],
         '/kiosk/search' => ['GET', 'shed_kiosk_search'],
         '/kiosk/check' => ['POST', 'shed_kiosk_check'],
@@ -72,13 +71,14 @@ function shed_kiosk_register_routes() {
         register_rest_route('shed/v1', $route, [
             'methods' => $entry[0],
             'callback' => $entry[1],
-            'permission_callback' => 'shed_kiosk_allowed',
+            'permission_callback' => ($route === '/kiosk/status' || $route === '/kiosk/activate') ? '__return_true' : 'shed_kiosk_device_permission',
         ]);
     }
 }
 
 function shed_kiosk_status(WP_REST_Request $request) {
     global $wpdb;
+    $device = shed_kiosk_device();
     $today = current_time('Y-m-d');
     list($start, $end) = shed_attendance_day_bounds($today);
     $present = shed_attendance_get_current_attendees($today);
@@ -128,10 +128,11 @@ function shed_kiosk_status(WP_REST_Request $request) {
         else { $regular_news[] = $item; }
     }
     return rest_ensure_response([
-        'present' => count($present),
-        'visits' => $visits,
+        'device_mode' => $device ? $device['mode'] : 'unregistered',
+        'present' => $device ? count($present) : null,
+        'visits' => $device ? $visits : null,
         'latest_id' => (int) $wpdb->get_var("SELECT COALESCE(MAX(id), 0) FROM {$events_table}"),
-        'events' => $events,
+        'events' => ($device && $device['mode'] === 'live') ? $events : [],
         'news' => $regular_news,
         'urgent_news' => $urgent_news,
     ]);
@@ -139,6 +140,10 @@ function shed_kiosk_status(WP_REST_Request $request) {
 
 function shed_kiosk_search(WP_REST_Request $request) {
     global $wpdb;
+    $device = shed_kiosk_device();
+    if ($device && $device['mode'] === 'test') {
+        return ['members' => [['id'=>1,'name'=>'Test Member One','handle'=>'Test One','in'=>false],['id'=>2,'name'=>'Test Member Two','handle'=>'Test Two','in'=>true]]];
+    }
     $query = sanitize_text_field((string) $request->get_param('q'));
     if (mb_strlen($query) < 2) { return ['members' => []]; }
     $table = shed_attendance_members_table();
@@ -163,6 +168,9 @@ function shed_kiosk_search(WP_REST_Request $request) {
 
 function shed_kiosk_check(WP_REST_Request $request) {
     global $wpdb;
+    if (!shed_kiosk_same_origin($request)) { return new WP_Error('invalid_origin', 'Request origin not permitted.', ['status'=>403]); }
+    $device = shed_kiosk_device();
+    if ($device && $device['mode'] === 'test') { return ['ok'=>true,'simulated'=>true,'name'=>'Test Member','direction'=>(string)$request->get_param('action'),'returning'=>false]; }
     $id = (int) $request->get_param('member_id');
     $action = (string) $request->get_param('action');
     $token = sanitize_text_field((string) $request->get_param('token'));
@@ -203,6 +211,7 @@ function shed_kiosk_check(WP_REST_Request $request) {
 }
 
 function shed_kiosk_admin_menu() {
+    add_submenu_page('shed-attendance', 'Kiosk devices', 'Kiosk devices', 'manage_options', 'shed-kiosk-devices', 'shed_kiosk_devices_admin');
     add_menu_page('Kiosk announcements', 'Kiosk announcements', 'shed_edit_kiosk_news', 'shed-kiosk-news', 'shed_kiosk_news_page', 'dashicons-megaphone', 32);
 }
 function shed_kiosk_news_page() {
@@ -211,12 +220,13 @@ function shed_kiosk_news_page() {
     echo '<div class="wrap"><h1>Kiosk announcements</h1><p>Enter a message and optional start/end dates. Blank dates mean no restriction. Both dates are inclusive.</p><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
     echo '<input type="hidden" name="action" value="shed_kiosk_save_news">';
     wp_nonce_field('shed_kiosk_news');
-    echo '<table class="widefat striped"><thead><tr><th>Announcement</th><th>Show from</th><th>Show until</th></tr></thead><tbody>';
+    echo '<table class="widefat striped"><thead><tr><th>Announcement</th><th>Show from</th><th>Show until</th><th>Delete</th></tr></thead><tbody>';
     for ($i = 0; $i < max(10, count($items) + 2); $i++) {
         $item = isset($items[$i]) && is_array($items[$i]) ? $items[$i] : [];
         echo '<tr><td><input type="text" style="width:100%" maxlength="250" name="news[' . (int) $i . '][message]" value="' . esc_attr($item['message'] ?? '') . '" /></td>';
         echo '<td><input type="date" name="news[' . (int) $i . '][start]" value="' . esc_attr($item['start'] ?? '') . '" /></td>';
-        echo '<td><input type="date" name="news[' . (int) $i . '][end]" value="' . esc_attr($item['end'] ?? '') . '" /></td></tr>';
+        echo '<td><input type="date" name="news[' . (int) $i . '][end]" value="' . esc_attr($item['end'] ?? '') . '" /></td>';
+        echo '<td><label><input type="checkbox" name="news[' . (int) $i . '][delete]" value="1" /> Delete</label></td></tr>';
     }
     echo '</tbody></table><p>To add more than ten messages, save your entries and additional blank rows will appear.</p>';
     submit_button('Save announcements');
@@ -228,7 +238,7 @@ function shed_kiosk_save_news() {
     $raw = isset($_POST['news']) && is_array($_POST['news']) ? wp_unslash($_POST['news']) : [];
     $items = [];
     foreach ($raw as $entry) {
-        if (!is_array($entry)) { continue; }
+        if (!is_array($entry) || !empty($entry['delete'])) { continue; }
         $message = mb_substr(sanitize_text_field((string) ($entry['message'] ?? '')), 0, 250);
         if ($message === '') { continue; }
         $start = shed_kiosk_valid_date($entry['start'] ?? '');
@@ -265,4 +275,99 @@ function shed_kiosk_long_absence($card_id, $current_time, $exclude_event_id = 0)
     $prior_day = new DateTimeImmutable(substr((string) $previous, 0, 10), wp_timezone());
     $today_day = new DateTimeImmutable(substr((string) $current_time, 0, 10), wp_timezone());
     return (int) $prior_day->diff($today_day)->format('%r%a') > 30;
+}
+
+/**
+ * Device credentials are stored hashed in WP options and issued only by an
+ * administrator-generated, single-use activation code. The cookie is HttpOnly
+ * and SameSite=Strict, scoped to the site's path and sent only over HTTPS.
+ */
+add_action('admin_post_shed_kiosk_create_device', 'shed_kiosk_create_device');
+add_action('admin_post_shed_kiosk_revoke_device', 'shed_kiosk_revoke_device');
+
+function shed_kiosk_devices_admin() {
+    if (!current_user_can('manage_options')) { wp_die('Not authorised'); }
+    $devices = (array) get_option('shed_kiosk_devices', []);
+    echo '<div class="wrap"><h1>Kiosk devices</h1><p>Create a one-time registration code, then enter it on the intended device. A live device can record attendance; a test device cannot.</p>';
+    $code = get_transient('shed_kiosk_last_activation_' . get_current_user_id());
+    if ($code) { echo '<div class="notice notice-info"><p>One-time activation code (valid 10 minutes): <strong>' . esc_html($code) . '</strong></p></div>'; }
+    echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="shed_kiosk_create_device">';
+    wp_nonce_field('shed_kiosk_create_device');
+    echo '<p><label>Device name <input required name="device_name" maxlength="80" /></label> <label>Access <select name="mode"><option value="live">Live attendance</option><option value="test">Development / simulated</option></select></label> ';
+    submit_button('Create activation code', 'primary', 'submit', false);
+    echo '</p></form>';
+    echo '<h2>Registered devices</h2><table class="widefat striped"><thead><tr><th>Name</th><th>Access</th><th>Last seen (UTC)</th><th>Action</th></tr></thead><tbody>';
+    foreach ($devices as $id => $device) {
+        echo '<tr><td>' . esc_html($device['name']) . '</td><td>' . esc_html($device['mode']) . '</td><td>' . esc_html($device['seen'] ?? 'Never') . '</td><td>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="shed_kiosk_revoke_device"><input type="hidden" name="id" value="' . esc_attr($id) . '">';
+        wp_nonce_field('shed_kiosk_revoke_device');
+        submit_button('Revoke', 'delete', 'submit', false, ['onclick'=>"return confirm('Revoke this device?')"]);
+        echo '</form></td></tr>';
+    }
+    echo '</tbody></table></div>';
+}
+function shed_kiosk_create_device() {
+    if (!current_user_can('manage_options')) { wp_die('Not authorised'); }
+    check_admin_referer('shed_kiosk_create_device');
+    $name = substr(sanitize_text_field(wp_unslash($_POST['device_name'] ?? '')), 0, 80);
+    $mode = sanitize_key(wp_unslash($_POST['mode'] ?? ''));
+    if (!$name || !in_array($mode, ['live', 'test'], true)) { wp_die('Invalid device'); }
+    $code = strtoupper(bin2hex(random_bytes(8)));
+    set_transient('shed_kiosk_pending_' . hash('sha256', $code), ['name'=>$name, 'mode'=>$mode], 10 * MINUTE_IN_SECONDS);
+    set_transient('shed_kiosk_last_activation_' . get_current_user_id(), $code, 10 * MINUTE_IN_SECONDS);
+    wp_safe_redirect(admin_url('admin.php?page=shed-kiosk-devices')); exit;
+}
+function shed_kiosk_revoke_device() {
+    if (!current_user_can('manage_options')) { wp_die('Not authorised'); }
+    check_admin_referer('shed_kiosk_revoke_device');
+    $id = sanitize_text_field(wp_unslash($_POST['id'] ?? ''));
+    $devices = (array) get_option('shed_kiosk_devices', []);
+    unset($devices[$id]); update_option('shed_kiosk_devices', $devices, false);
+    wp_safe_redirect(admin_url('admin.php?page=shed-kiosk-devices')); exit;
+}
+function shed_kiosk_same_origin(WP_REST_Request $request) {
+    $origin = $request->get_header('origin');
+    $referer = $request->get_header('referer');
+    $expected = wp_parse_url(home_url(), PHP_URL_HOST);
+    $source = $origin ?: $referer;
+    return $source && strtolower((string) wp_parse_url($source, PHP_URL_HOST)) === strtolower((string) $expected)
+        && wp_parse_url($source, PHP_URL_SCHEME) === 'https';
+}
+function shed_kiosk_activate(WP_REST_Request $request) {
+    if (!is_ssl() || !shed_kiosk_same_origin($request)) {
+        return new WP_Error('secure_required', 'HTTPS and a same-origin request are required.', ['status'=>403]);
+    }
+    $code = strtoupper(preg_replace('/[^A-F0-9]/', '', (string) $request->get_param('code')));
+    $key = 'shed_kiosk_pending_' . hash('sha256', $code);
+    $pending = strlen($code) === 16 ? get_transient($key) : false;
+    if (!$pending) { return new WP_Error('activation_failed', 'Invalid or expired activation code.', ['status'=>403]); }
+    delete_transient($key);
+    $id = wp_generate_uuid4();
+    $token = bin2hex(random_bytes(32));
+    $devices = (array) get_option('shed_kiosk_devices', []);
+    $devices[$id] = ['name'=>$pending['name'], 'mode'=>$pending['mode'], 'hash'=>hash('sha256', $token), 'seen'=>gmdate('Y-m-d H:i:s')];
+    update_option('shed_kiosk_devices', $devices, false);
+    $path = (string) (wp_parse_url(home_url('/'), PHP_URL_PATH) ?: '/');
+    setcookie('shed_kiosk_device', $id . '.' . $token, ['expires'=>time() + YEAR_IN_SECONDS,'path'=>$path,'secure'=>true,'httponly'=>true,'samesite'=>'Strict']);
+    return ['ok'=>true, 'mode'=>$pending['mode']];
+}
+function shed_kiosk_device() {
+    $cookie = isset($_COOKIE['shed_kiosk_device']) ? (string) $_COOKIE['shed_kiosk_device'] : '';
+    if (!preg_match('/^([0-9a-f-]{36})\\.([0-9a-f]{64})$/', $cookie, $matches)) { return null; }
+    $devices = (array) get_option('shed_kiosk_devices', []);
+    $device = $devices[$matches[1]] ?? null;
+    if (!$device || !hash_equals((string) $device['hash'], hash('sha256', $matches[2]))) { return null; }
+    if (rand(1, 150) === 1) {
+        $devices[$matches[1]]['seen'] = gmdate('Y-m-d H:i:s');
+        update_option('shed_kiosk_devices', $devices, false);
+    }
+    return $device;
+}
+function shed_kiosk_device_permission(WP_REST_Request $request) {
+    $device = shed_kiosk_device();
+    if (!$device) { return new WP_Error('device_required', 'Register this device before accessing attendance.', ['status'=>403]); }
+    if ($request->get_method() !== 'GET' && !shed_kiosk_same_origin($request)) {
+        return new WP_Error('origin_forbidden', 'Request origin not permitted.', ['status'=>403]);
+    }
+    return true;
 }
